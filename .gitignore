@@ -37,3 +37,5 @@ notification-api-design.md
 .mvn
 mvnw.cmd
 notification-api-schedule.md
+.env
+
