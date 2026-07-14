@@ -1,4 +1,4 @@
-package com.siren.notificationservice.core.dto;
+package com.siren.notificationservice.core.dto.event;
 
 import java.time.ZonedDateTime;
 
