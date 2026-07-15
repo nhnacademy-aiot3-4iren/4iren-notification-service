@@ -29,6 +29,15 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.routing-key.subscribe-sync}")
     private String subscribeSyncRoutingKey;
 
+    @Value("${rabbitmq.exchange.telegram-events}")
+    private String telegramEventsExchangeName;
+
+    @Value("${rabbitmq.queue.telegram-inbound}")
+    private String telegramInboundQueueName;
+
+    @Value("${rabbitmq.routing-key.telegram-inbound}")
+    private String telegramInboundRoutingKey;
+
     /**
      * Account API 등 외부 서비스가 발행하는 JSON 이벤트를 로컬 DTO로 역직렬화한다.
      * 기본값(__TypeId__ 헤더 기반)으로 두면 발행 측 클래스의 FQCN을 그대로 찾으려 해서
@@ -94,5 +103,35 @@ public class RabbitMQConfig {
     @Bean
     public Binding subscribeSyncBinding(Queue subscribeSyncQueue, TopicExchange accountEventsExchange) {
         return BindingBuilder.bind(subscribeSyncQueue).to(accountEventsExchange).with(subscribeSyncRoutingKey);
+    }
+
+    /**
+     * Telegram inbound exchange
+     *
+     * @return telegram-events 익스체인지
+     */
+    @Bean
+    public TopicExchange telegramEventsExchange() {
+        return new TopicExchange(telegramEventsExchangeName);
+    }
+
+    /**
+     * Telegram inbound queue
+     * @return durable 큐
+     */
+    @Bean
+    public Queue telegramInboundQueue() {
+        return new Queue(telegramInboundQueueName, true);
+    }
+
+    /**
+     * telegramInboundQueue를 telegramEventsExchange의 telegram inbound 라우팅 키에 바인딩한다.
+     * @param telegramInboundQueue 텔레그램 인바운드 큐
+     * @param telegramEventsExchange 텔레그램 인바운드 익스체인지
+     * @return 큐-익스체인지 바인딩
+     */
+    @Bean
+    public Binding telegramInboundBinding(Queue telegramInboundQueue, TopicExchange telegramEventsExchange) {
+        return BindingBuilder.bind(telegramInboundQueue).to(telegramEventsExchange).with(telegramInboundRoutingKey);
     }
 }

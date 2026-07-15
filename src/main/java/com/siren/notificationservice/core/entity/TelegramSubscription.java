@@ -50,4 +50,12 @@ public class TelegramSubscription {
     public void unblock() {
         this.active = true;
     }
+
+    /**
+     * 최초 연동시 chatId/linkedAt 채워줌
+     */
+    public void link(String chatId, ZonedDateTime linkedAt) {
+        this.chatId=chatId;
+        this.linkedAt = linkedAt;
+    }
 }
