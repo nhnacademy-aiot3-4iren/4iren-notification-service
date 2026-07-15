@@ -42,6 +42,7 @@ docs/telegram-integration.md
 
 ### Secrets ###
 .env
+http-client.private.env.json
 
 ### OS ###
 .DS_Store
