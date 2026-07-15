@@ -7,6 +7,7 @@ import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.exception.TokenExpiredException;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import org.telegram.telegrambots.meta.api.objects.chatmember.ChatMemberMember;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TelegramInboundListener {
@@ -48,12 +50,20 @@ public class TelegramInboundListener {
     /**
      * "/start {token}" 메시지를 처리한다. 토큰을 검증해 userId를 얻고,
      * 이미 연동 row가 있으면 chatId/linkedAt만 갱신하고, 없으면 새로 만든다.
+     * 토큰 없이 맨 "/start"만 오는 경우(예: 봇 차단 해제 시 텔레그램이 자동으로 재전송하는 케이스)엔
+     * 우리가 식별할 정보가 없으므로 예외 없이 조용히 무시한다 — 그냥 던지면 DLQ가 없어서
+     * 절대 성공할 수 없는 메시지가 무한 재큐잉된다.
      *
      * @param event  원본 이벤트 (botType 확인용)
      * @param update /start 메시지가 담긴 Update
      */
     private void handleStartCommand(TelegramInboundEvent event, Update update) {
         String token = update.getMessage().getText().substring("/start".length()).trim();
+        if (token.isBlank()) {
+            log.info("토큰 없는 /start 수신 (botType={}), 무시함", event.botType()); // 차단을 했다가 해제를 하면 봇이 자동으로 /start를 보내버려서 토큰 없는 값이 생김
+            return;
+        }
+
         Long userId = telegramLinkTokenService.consumeToken(token, event.botType())
                 .orElseThrow(() -> new TokenExpiredException("DeepLink: UUID token expired"));
         String chatId = update.getMessage().getChatId().toString();
