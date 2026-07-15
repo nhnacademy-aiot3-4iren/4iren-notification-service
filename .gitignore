@@ -36,11 +36,13 @@ build/
 .claude/settings.local.json
 CLAUDE.md
 
-### 설계 초안 (아직 커밋 안 함) ###
+### 설계 초안 (로컬 전용 메모) ###
 notification-api-design.md
+docs/telegram-integration.md
 
 ### Secrets ###
 .env
+http-client.private.env.json
 
 ### OS ###
 .DS_Store

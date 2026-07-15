@@ -10,6 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+/**
+ * Account 에서 유저 정보가 업데이트 될 때
+ * Notification API에서 Account와의 동기화를 위해 생성
+ */
 @Component
 @RequiredArgsConstructor
 public class UserSyncEventListener {

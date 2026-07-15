@@ -1,0 +1,20 @@
+### 다음으로 실행 부분 dev로
+### Admin 봇 webhook 등록 (앱/ngrok 켠 상태에서 실행)
+POST https://api.telegram.org/bot{{adminBotToken}}/setWebhook?url={{webhookBaseUrl}}/webhook/admin
+
+### Member 봇 webhook 등록
+POST https://api.telegram.org/bot{{memberBotToken}}/setWebhook?url={{webhookBaseUrl}}/webhook/member
+
+### Admin 봇 webhook 등록 상태 확인 (url이 우리 ngrok 주소로 잡혀있는지)
+GET https://api.telegram.org/bot{{adminBotToken}}/getWebhookInfo
+
+### Member 봇 webhook 등록 상태 확인
+GET https://api.telegram.org/bot{{memberBotToken}}/getWebhookInfo
+
+### Admin 봇 딥링크 토큰 발급 (로컬 테스트 - Gateway 없이 X-USER-ID 직접 지정)
+POST {{host}}/telegram/admin/link-token
+X-USER-ID: {{testUserId}}
+
+### Member 봇 딥링크 토큰 발급 (로컬 테스트 - Gateway 없이 X-USER-ID 직접 지정)
+POST {{host}}/telegram/member/link-token
+X-USER-ID: {{testUserId}}
