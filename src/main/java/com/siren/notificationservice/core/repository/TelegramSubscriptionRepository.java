@@ -38,4 +38,14 @@ public interface TelegramSubscriptionRepository extends JpaRepository<TelegramSu
      * @return 연동 row, 없으면 empty
      */
     Optional<TelegramSubscription> findByChatIdAndBotType(String chatId, BotType botType);
+
+    /**
+     * 특정 유저가 특정 봇에 이미 연동돼 있는지 확인한다. 딥링크 토큰 발급 전
+     * 프론트가 재연동 확인 다이얼로그를 보여줄지 판단하는 데 쓴다 (#67).
+     *
+     * @param userId  대상 유저 id
+     * @param botType ADMIN_BOT 또는 USER_BOT
+     * @return 연동 row 존재 여부
+     */
+    boolean existsByNotificationUser_UserIdAndBotType(Long userId, BotType botType);
 }

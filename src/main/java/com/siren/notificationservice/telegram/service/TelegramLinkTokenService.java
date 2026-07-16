@@ -1,6 +1,7 @@
 package com.siren.notificationservice.telegram.service;
 
 import com.siren.notificationservice.core.entity.BotType;
+import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -29,6 +30,7 @@ public class TelegramLinkTokenService {
     public static final Duration LINK_TOKEN_TTL = Duration.ofMinutes(LINK_TOKEN_TTL_MINUTES);
 
     private final StringRedisTemplate stringRedisTemplate;
+    private final TelegramSubscriptionRepository telegramSubscriptionRepository;
 
     /**
      * 딥 링크 연동 시 UUID를 발급
@@ -64,5 +66,18 @@ public class TelegramLinkTokenService {
         } catch (NumberFormatException e) {
             return Optional.empty();
         }
+    }
+
+    /**
+     * 특정 유저가 특정 봇에 이미 연동돼 있는지 확인한다.
+     * 프론트가 딥링크 토큰 발급 전 "이미 연동되어 있습니다, 재연동하시겠어요?" 확인
+     * 다이얼로그를 보여줄지 판단하는 데 쓴다.
+     *
+     * @param userId  대상 유저 id
+     * @param botType ADMIN_BOT 또는 USER_BOT
+     * @return 연동 여부
+     */
+    public boolean isLinked(Long userId, BotType botType) {
+        return telegramSubscriptionRepository.existsByNotificationUser_UserIdAndBotType(userId, botType);
     }
 }

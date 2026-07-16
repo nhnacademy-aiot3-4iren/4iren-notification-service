@@ -39,6 +39,7 @@ CLAUDE.md
 ### 설계 초안 (로컬 전용 메모) ###
 notification-api-design.md
 docs/telegram-integration.md
+docs/handoff-next-session.md
 
 ### Secrets ###
 .env
