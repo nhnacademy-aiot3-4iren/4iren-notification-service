@@ -32,11 +32,11 @@ public class FeedbackLog {
     @Column(name = "room_id", nullable = false)
     private Long roomId;
 
-    @Column(name = "avg_temperature", nullable = false)
-    private double avgTemperature; // 피드백 직전 15분 실내 평균
+    @Column(name = "avg_temperature")
+    private Double avgTemperature; // 피드백 직전 15분(또는 experiencedAt 기준) 실내 평균, 온도 센서 없는 강의실 대비 NULL 허용
 
-    @Column(name = "avg_humidity", nullable = false)
-    private double avgHumidity; // 피드백 직전 15분 실내 평균
+    @Column(name = "avg_humidity")
+    private Double avgHumidity; // 피드백 직전 15분(또는 experiencedAt 기준) 실내 평균, 습도 센서 없는 강의실 대비 NULL 허용
 
     @Column(name = "avg_co2")
     private Double avgCo2; // CO2 센서 없는 강의실 대비 NULL 허용
@@ -54,7 +54,13 @@ public class FeedbackLog {
     private String rawText; // 피드백 원문 보존 (재분류/재학습 대비)
 
     @Column(name = "created_at", nullable = false)
-    private ZonedDateTime createdAt;
+    private ZonedDateTime createdAt; // 피드백 제출 시각
+
+    @Column(name = "is_delayed", nullable = false)
+    private boolean delayed; // 자연어에서 지연 제출 신호("아까", "집에 와서" 등)가 감지되면 true
+
+    @Column(name = "experienced_at")
+    private ZonedDateTime experiencedAt; // 사용자가 언급한 구체적 체감 시각(있으면 평균값 계산 기준점), 없으면 NULL
 
     @Column(name = "outside_temperature", nullable = false)
     private double outsideTemperature; // 시점 스냅샷 (평균 아님)
