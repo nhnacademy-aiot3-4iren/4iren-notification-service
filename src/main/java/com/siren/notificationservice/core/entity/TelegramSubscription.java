@@ -18,10 +18,10 @@ public class TelegramSubscription {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long telegramSubId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "bot_type", nullable = false)
+    @Column(name = "bot_type", length = 20, nullable = false)
     private BotType botType;
 
     @Column(name = "chat_id", length = 50, nullable = false)
@@ -30,12 +30,11 @@ public class TelegramSubscription {
     @Column(name = "is_active", nullable = false)
     private boolean active; // 봇 차단 시 false (my_chat_member 웹훅으로 갱신)
 
-    @Column(name = "linked_at", nullable = false)
-    private ZonedDateTime linkedAt;
+    @Column(name = "created_at", nullable = false)
+    private ZonedDateTime createdAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private NotificationUser notificationUser;
+    @Column(name = "user_id", nullable = false)
+    private Long userId; // Account API 소유 유저 id (bare, 로컬 FK 없음)
 
     /**
      * 봇 차단을 반영한다. {@code my_chat_member} 웹훅 이벤트 수신 시 호출된다.
@@ -52,10 +51,10 @@ public class TelegramSubscription {
     }
 
     /**
-     * 최초 연동시 chatId/linkedAt 채워줌
+     * 최초 연동시 chatId/createdAt 채워줌
      */
-    public void link(String chatId, ZonedDateTime linkedAt) {
-        this.chatId=chatId;
-        this.linkedAt = linkedAt;
+    public void link(String chatId, ZonedDateTime createdAt) {
+        this.chatId = chatId;
+        this.createdAt = createdAt;
     }
 }
