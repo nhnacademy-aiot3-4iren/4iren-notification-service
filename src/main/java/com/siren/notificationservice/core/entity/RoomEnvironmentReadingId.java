@@ -1,5 +1,8 @@
 package com.siren.notificationservice.core.entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -16,9 +19,11 @@ import java.io.Serializable;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class RoomSubscriptionId implements Serializable {
+public class RoomEnvironmentReadingId implements Serializable {
 
-    private Long userId;
+    private Long snapshotId;
 
-    private Long roomId;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "metric_type", length = 30)
+    private EnvironmentMetricType metricType;
 }
