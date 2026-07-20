@@ -1,7 +1,6 @@
 package com.siren.notificationservice.telegram.service;
 
 import com.siren.notificationservice.core.entity.TelegramSubscription;
-import com.siren.notificationservice.core.repository.NotificationUserRepository;
 import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import lombok.RequiredArgsConstructor;
@@ -27,32 +26,31 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TelegramSubscriptionService {
     private final TelegramSubscriptionRepository telegramSubscriptionRepository;
-    private final NotificationUserRepository notificationUserRepository;
 
     /**
      * 유효한 토큰으로 확인된 "/start" 요청을 실제로 반영한다.
      *
      * @param event  원본 이벤트 (botType 확인용)
-     * @param update /start 메시지가 담긴 Update
      * @param userId 토큰에 매핑된 유저 id
      */
-    public void handleValidStart(TelegramInboundEvent event, Update update, Long userId) {
+    public void handleValidStart(TelegramInboundEvent event, Long userId) {
+        Update update = event.update();
         String chatId = update.getMessage().getChatId().toString();
-        ZonedDateTime linkedAt = ZonedDateTime.now();
+        ZonedDateTime now = ZonedDateTime.now();
 
         // 연동이 최초인지, 재연동인지 판단
         Optional<TelegramSubscription> existing =
-                telegramSubscriptionRepository.findByNotificationUser_UserIdAndBotType(userId, event.botType());
+                telegramSubscriptionRepository.findByUserIdAndBotType(userId, event.botType());
 
         if (existing.isPresent()) {
-            existing.get().link(chatId, linkedAt);
+            existing.get().link(chatId, now);
         } else {
             TelegramSubscription subscription = TelegramSubscription.builder()
-                    .notificationUser(notificationUserRepository.getReferenceById(userId)) //프록시로 처리
+                    .userId(userId)
                     .botType(event.botType())
                     .chatId(chatId)
                     .active(true)
-                    .linkedAt(linkedAt)
+                    .createdAt(now)
                     .build();
             telegramSubscriptionRepository.save(subscription);
         }
@@ -63,9 +61,9 @@ public class TelegramSubscriptionService {
      * 이 이벤트엔 우리 쪽 userId가 없고 chat_id만 있어서, chat_id로 연동 row를 찾아 상태를 반영한다.
      *
      * @param event  원본 이벤트 (botType 확인용)
-     * @param update my_chat_member 정보가 담긴 Update
      */
-    public void handleBlockedBot(TelegramInboundEvent event, Update update) {
+    public void handleBlockedBot(TelegramInboundEvent event) {
+        Update update = event.update();
         ChatMemberUpdated chatMemberUpdated = update.getMyChatMember();
         String newStatus = chatMemberUpdated.getNewChatMember().getStatus(); // 새로운 상태의 status 값을 확인
         String chatId = chatMemberUpdated.getChat().getId().toString();

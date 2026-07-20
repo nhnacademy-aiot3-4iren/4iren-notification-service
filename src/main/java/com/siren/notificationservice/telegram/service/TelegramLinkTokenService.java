@@ -78,6 +78,6 @@ public class TelegramLinkTokenService {
      * @return 연동 여부
      */
     public boolean isLinked(Long userId, BotType botType) {
-        return telegramSubscriptionRepository.existsByNotificationUser_UserIdAndBotType(userId, botType);
+        return telegramSubscriptionRepository.existsByUserIdAndBotType(userId, botType);
     }
 }

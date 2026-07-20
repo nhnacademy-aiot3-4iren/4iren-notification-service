@@ -17,7 +17,7 @@ public interface TelegramSubscriptionRepository extends JpaRepository<TelegramSu
      * @param botType ADMIN_BOT 또는 USER_BOT
      * @return 활성 상태인 텔레그램 연동 목록
      */
-    List<TelegramSubscription> findByNotificationUser_UserIdInAndBotTypeAndActiveTrue(List<Long> userIds, BotType botType);
+    List<TelegramSubscription> findByUserIdInAndBotTypeAndActiveTrue(List<Long> userIds, BotType botType);
 
     /**
      * 특정 유저의 특정 봇 연동 row 하나를 조회한다 ({UNIQUE(user_id, bot_type)} 기준 단건).
@@ -27,7 +27,7 @@ public interface TelegramSubscriptionRepository extends JpaRepository<TelegramSu
      * @param botType ADMIN_BOT 또는 USER_BOT
      * @return 연동 row, 없으면 empty
      */
-    Optional<TelegramSubscription> findByNotificationUser_UserIdAndBotType(Long userId, BotType botType);
+    Optional<TelegramSubscription> findByUserIdAndBotType(Long userId, BotType botType);
 
     /**
      * chat_id로 연동 row를 조회한다. my_chat_member 웹훅(#61)은 유저 id가 아니라
@@ -47,5 +47,5 @@ public interface TelegramSubscriptionRepository extends JpaRepository<TelegramSu
      * @param botType ADMIN_BOT 또는 USER_BOT
      * @return 연동 row 존재 여부
      */
-    boolean existsByNotificationUser_UserIdAndBotType(Long userId, BotType botType);
+    boolean existsByUserIdAndBotType(Long userId, BotType botType);
 }
