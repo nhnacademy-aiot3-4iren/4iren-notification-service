@@ -42,24 +42,24 @@ public class TelegramInboundListener {
 
         if (update.hasMessage() && update.getMessage().hasText()
                 && update.getMessage().getText().startsWith("/start")) {
-            handleStartCommand(event, update);
+            handleStartCommand(event);
         } else if (update.hasMyChatMember()) { // 봇 자신의 채팅방 소속 상태나 권한이 변경되었을때
-            telegramSubscriptionService.handleBlockedBot(event, update);
+            telegramSubscriptionService.handleBlockedBot(event);
         }
         // 그 외 자연어 메시지는 Phase 5 의도분류에서 처리
     }
 
     /**
      * "/start {token}" 메시지를 처리한다. 토큰을 검증해 userId를 얻고,
-     * 이미 연동 row가 있으면 chatId/linkedAt만 갱신하고, 없으면 새로 만든다.
+     * 이미 연동 row가 있으면 chatId/createdAt만 갱신하고, 없으면 새로 만든다.
      * 토큰이 없거나(맨 "/start"만 오는 경우, 예: 봇 차단 해제 시 텔레그램이 자동으로 재전송하는 케이스)
      * 만료/이미 소비된 경우엔 재시도해도 절대 성공할 수 없으므로 예외 없이 조용히 무시한다
      * — 그냥 던지면 DLQ가 없어서 무한 재큐잉된다. 사용자는 프론트에서 토큰을 다시 발급받아야 한다.
      *
      * @param event  원본 이벤트 (botType 확인용)
-     * @param update /start 메시지가 담긴 Update
      */
-    private void handleStartCommand(TelegramInboundEvent event, Update update) {
+    private void handleStartCommand(TelegramInboundEvent event) {
+        Update update = event.update();
         String token = update.getMessage().getText().substring("/start".length()).trim();
         if (token.isBlank()) {
             log.info("토큰 없는 /start 수신 (botType={}), 무시함", event.botType()); // 차단을 했다가 해제를 하면 봇이 자동으로 /start를 보내버려서 토큰 없는 값이 생김
@@ -73,7 +73,7 @@ public class TelegramInboundListener {
             return;
         }
 
-        telegramSubscriptionService.handleValidStart(event, update, userId.get()); //연동 로직체크
+        telegramSubscriptionService.handleValidStart(event, userId.get()); //연동 로직체크
         handleSuccessLink(event, update); // 연동 성공 메세지
     }
 

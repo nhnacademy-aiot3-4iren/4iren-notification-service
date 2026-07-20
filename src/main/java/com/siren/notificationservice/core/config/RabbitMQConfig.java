@@ -14,21 +14,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
-    @Value("${rabbitmq.exchange.account-events}")
-    private String accountEventsExchangeName;
-
-    @Value("${rabbitmq.queue.user-sync}")
-    private String userSyncQueueName;
-
-    @Value("${rabbitmq.routing-key.user-synced}")
-    private String userSyncedRoutingKey;
-
-    @Value("${rabbitmq.queue.subscribe-sync}")
-    private String subscribeSyncQueueName;
-
-    @Value("${rabbitmq.routing-key.subscribe-sync}")
-    private String subscribeSyncRoutingKey;
-
     @Value("${rabbitmq.exchange.telegram-events}")
     private String telegramEventsExchangeName;
 
@@ -51,58 +36,6 @@ public class RabbitMQConfig {
         Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
         converter.setTypePrecedence(TypePrecedence.INFERRED);
         return converter;
-    }
-
-    /**
-     * Account API가 유저 관련 이벤트를 발행하는 토픽 익스체인지.
-     *
-     * @return account-events 익스체인지
-     */
-    @Bean
-    public TopicExchange accountEventsExchange() {
-        return new TopicExchange(accountEventsExchangeName);
-    }
-
-    /**
-     * 유저 동기화(UserSyncEvent) 전용 큐.
-     *
-     * @return durable 큐
-     */
-    @Bean
-    public Queue userSyncQueue() {
-        return new Queue(userSyncQueueName, true);
-    }
-
-    /**
-     * userSyncQueue를 accountEventsExchange의 유저 동기화 라우팅 키에 바인딩한다.
-     *
-     * @param userSyncQueue         유저 동기화 큐
-     * @param accountEventsExchange 계정 이벤트 익스체인지
-     * @return 큐-익스체인지 바인딩
-     */
-    @Bean
-    public Binding userSyncBinding(Queue userSyncQueue, TopicExchange accountEventsExchange) {
-        return BindingBuilder.bind(userSyncQueue).to(accountEventsExchange).with(userSyncedRoutingKey);
-    }
-
-    /**
-     * 유저 구독 상태 동기화 전용 큐
-     * @return durable 큐
-     */
-    @Bean
-    public Queue subscribeSyncQueue() {
-        return new Queue(subscribeSyncQueueName, true);
-    }
-
-    /**
-     * subscribeSyncQueue를 accountEventsExchange의 유저 동기화 라우팅 키에 바인딩한다.
-     * @param subscribeSyncQueue 유저 구독 동기화 큐
-     * @param accountEventsExchange 계정 이벤트 익스체인지
-     * @return 큐-익스체인지 바인딩
-     */
-    @Bean
-    public Binding subscribeSyncBinding(Queue subscribeSyncQueue, TopicExchange accountEventsExchange) {
-        return BindingBuilder.bind(subscribeSyncQueue).to(accountEventsExchange).with(subscribeSyncRoutingKey);
     }
 
     /**
