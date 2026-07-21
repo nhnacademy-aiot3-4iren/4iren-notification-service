@@ -1,4 +1,4 @@
-package com.siren.notificationservice.core.entity;
+package com.siren.notificationservice.core.entity.domain;
 
 /**
  * feedback_score의 key-value 축 종류. 사용자가 자연어로 언급한 "체감" 대상을 나타낸다

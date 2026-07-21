@@ -1,6 +1,6 @@
 package com.siren.notificationservice.telegram.controller.webhook;
 
-import com.siren.notificationservice.core.entity.BotType;
+import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

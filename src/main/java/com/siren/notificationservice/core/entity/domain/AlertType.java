@@ -1,4 +1,4 @@
-package com.siren.notificationservice.core.entity;
+package com.siren.notificationservice.core.entity.domain;
 
 /**
  * alert_history에 기록되는 알림 종류. VARCHAR 컬럼에 이름으로 저장된다({@code @Enumerated(STRING)})

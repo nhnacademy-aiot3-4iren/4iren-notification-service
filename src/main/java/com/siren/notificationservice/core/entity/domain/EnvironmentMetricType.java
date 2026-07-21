@@ -1,4 +1,4 @@
-package com.siren.notificationservice.core.entity;
+package com.siren.notificationservice.core.entity.domain;
 
 /**
  * room_environment_reading의 key-value 축 종류. Core API 센서가 실제로 측정한 값을 나타낸다
