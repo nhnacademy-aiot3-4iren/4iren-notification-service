@@ -1,5 +1,7 @@
-package com.siren.notificationservice.core.entity;
+package com.siren.notificationservice.core.entity.table;
 
+import com.siren.notificationservice.core.entity.domain.FeedbackScoreId;
+import com.siren.notificationservice.core.entity.domain.SensorType;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;

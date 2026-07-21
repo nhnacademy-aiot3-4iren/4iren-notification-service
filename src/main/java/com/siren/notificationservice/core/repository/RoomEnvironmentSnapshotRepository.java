@@ -1,6 +1,6 @@
 package com.siren.notificationservice.core.repository;
 
-import com.siren.notificationservice.core.entity.RoomEnvironmentSnapshot;
+import com.siren.notificationservice.core.entity.table.RoomEnvironmentSnapshot;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.ZonedDateTime;

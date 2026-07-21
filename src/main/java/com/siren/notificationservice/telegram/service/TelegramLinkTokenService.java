@@ -1,6 +1,6 @@
 package com.siren.notificationservice.telegram.service;
 
-import com.siren.notificationservice.core.entity.BotType;
+import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

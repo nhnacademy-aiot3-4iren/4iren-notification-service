@@ -1,4 +1,4 @@
-package com.siren.notificationservice.core.entity;
+package com.siren.notificationservice.core.entity.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
@@ -19,11 +19,11 @@ import java.io.Serializable;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class RoomEnvironmentReadingId implements Serializable {
+public class FeedbackScoreId implements Serializable {
 
-    private Long snapshotId;
+    private Long feedbackLogId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "metric_type", length = 30)
-    private EnvironmentMetricType metricType;
+    @Column(name = "sensor_type", length = 30)
+    private SensorType sensorType;
 }

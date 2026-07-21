@@ -1,6 +1,6 @@
 package com.siren.notificationservice.telegram.controller;
 
-import com.siren.notificationservice.core.entity.BotType;
+import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.telegram.config.TelegramBotProperties;
 import com.siren.notificationservice.telegram.dto.response.LinkStatusResponse;
 import com.siren.notificationservice.telegram.dto.response.LinkTokenResponse;
