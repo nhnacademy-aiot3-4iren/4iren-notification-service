@@ -1,4 +1,4 @@
-package com.siren.notificationservice.core.entity;
+package com.siren.notificationservice.core.entity.table;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
