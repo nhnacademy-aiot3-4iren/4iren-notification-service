@@ -1,7 +1,7 @@
 package com.siren.notificationservice.core.repository;
 
-import com.siren.notificationservice.core.entity.BotType;
-import com.siren.notificationservice.core.entity.TelegramSubscription;
+import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.entity.table.TelegramSubscription;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

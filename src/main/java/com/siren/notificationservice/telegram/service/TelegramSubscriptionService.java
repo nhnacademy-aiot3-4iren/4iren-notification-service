@@ -1,6 +1,6 @@
 package com.siren.notificationservice.telegram.service;
 
-import com.siren.notificationservice.core.entity.TelegramSubscription;
+import com.siren.notificationservice.core.entity.table.TelegramSubscription;
 import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import lombok.RequiredArgsConstructor;

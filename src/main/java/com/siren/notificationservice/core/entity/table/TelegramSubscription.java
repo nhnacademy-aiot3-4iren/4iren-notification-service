@@ -1,5 +1,6 @@
-package com.siren.notificationservice.core.entity;
+package com.siren.notificationservice.core.entity.table;
 
+import com.siren.notificationservice.core.entity.domain.BotType;
 import jakarta.persistence.*;
 import lombok.*;
 
