@@ -2,6 +2,7 @@ package com.siren.notificationservice.telegram.service;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
+import com.siren.notificationservice.telegram.config.TelegramBotProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -31,14 +32,25 @@ public class TelegramLinkTokenService {
 
     private final StringRedisTemplate stringRedisTemplate;
     private final TelegramSubscriptionRepository telegramSubscriptionRepository;
+    private final TelegramBotProperties telegramBotProperties;
+    private static final String DEEP_LINK_BASE_URL="https://t.me/";
+    private static final String DEEP_LINK_START_PARAM ="?start=";
 
+    public String getDeepLinkUrl(Long userId, BotType botType) {
+        String uuid = issueToken(userId, botType);
+        String botUsername = switch (botType) {
+            case ADMIN_BOT -> telegramBotProperties.adminBot().username();
+            case USER_BOT -> telegramBotProperties.memberBot().username();
+        };
+        return DEEP_LINK_BASE_URL + botUsername + DEEP_LINK_START_PARAM + uuid;
+    }
     /**
      * 딥 링크 연동 시 UUID를 발급
      * @param userId 사용자 아이디
      * @param botType 어떤 봇으로 연동할건지
      * @return uuid token(String)
      */
-    public String issueToken(Long userId, BotType botType) {
+    private String issueToken(Long userId, BotType botType) {
         String token = UUID.randomUUID().toString();
         String redisKey = "telegram:link-token:" + botType.name() + ":" + token;
 
