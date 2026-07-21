@@ -31,11 +31,17 @@ build/
 
 ### VS Code ###
 .vscode/
-CLAUDE.md
-notification-api-design.md
-.gitattributes
-.mvn
-mvnw.cmd
-notification-api-schedule.md
-.env
 
+### Claude Code (개인 로컬 설정만 제외, .claude/ 나머지는 팀 공유) ###
+.claude/settings.local.json
+CLAUDE.md
+
+### 설계 초안 (로컬 전용 메모) ###
+notification-api-design.md
+
+### Secrets ###
+.env
+http-client.private.env.json
+
+### OS ###
+.DS_Store
