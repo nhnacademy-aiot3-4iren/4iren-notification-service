@@ -53,7 +53,7 @@ public class IntentClassificationAgent {
      *
      * @param event 원본 텔레그램 인바운드 이벤트
      */
-    public void classify(TelegramInboundEvent event){
+    public void classify(TelegramInboundEvent event, Long userId) {
         IntentType intentType = IntentType.FALLBACK;
         try{
             String userMessage = event.update().getMessage().getText();
@@ -62,11 +62,12 @@ public class IntentClassificationAgent {
                     .options(googleGenAiChatOptions)
                     .call()
                     .content();
+            log.debug("[IntentClassificationAgent] LLM 호출 결과 json: {}", json);
             intentType = objectMapper.readValue(json, IntentClassificationResult.class).intent();
         } catch (Exception e) {
             log.warn("[IntentClassificationAgent] 의도 분류 실패 -> FALLBACK 처리", e);
         }
-        intentRouteDispatcher.dispatch(intentType, event);
+        intentRouteDispatcher.dispatch(intentType, event, userId);
     }
 
     private GoogleGenAiChatOptions buildJsonOptions(){
@@ -80,6 +81,7 @@ public class IntentClassificationAgent {
             }
             """;
         return GoogleGenAiChatOptions.builder()
+                .model("gemini-flash-latest")
                 .responseMimeType("application/json")
                 .responseSchema(schemaJson)
                 .build();

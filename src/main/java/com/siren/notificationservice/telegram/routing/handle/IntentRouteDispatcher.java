@@ -37,11 +37,11 @@ public class IntentRouteDispatcher{
      * @param intentType 분류된 의도
      * @param event      원본 텔레그램 인바운드 이벤트
      */
-    public void dispatch(IntentType intentType, TelegramInboundEvent event) {
+    public void dispatch(IntentType intentType, TelegramInboundEvent event, Long userId) {
         IntentRouteHandler handler = handlers.get(intentType);
         if (handler == null) {
             throw new IllegalStateException("등록된 IntentRouteHandler가 없습니다: " + intentType);
         }
-        handler.handle(event);
+        handler.handle(event, userId);
     }
 }

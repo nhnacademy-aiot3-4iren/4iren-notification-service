@@ -1,12 +1,16 @@
 package com.siren.notificationservice.telegram.service;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.entity.table.TelegramSubscription;
+import com.siren.notificationservice.core.exception.MissingChatIdException;
+import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
 import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
 import com.siren.notificationservice.telegram.config.TelegramBotProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -36,13 +40,31 @@ public class TelegramLinkTokenService {
     private static final String DEEP_LINK_BASE_URL="https://t.me/";
     private static final String DEEP_LINK_START_PARAM ="?start=";
 
+    /**
+     * 사용자에게 딥링크를 제공해줍니다
+     * @param userId 사용자 아이디
+     * @param botType 제공할 딥링크의 봇
+     * @return 완성된 딥링크 전체본
+     */
     public String getDeepLinkUrl(Long userId, BotType botType) {
         String uuid = issueToken(userId, botType);
-        String botUsername = switch (botType) {
-            case ADMIN_BOT -> telegramBotProperties.adminBot().username();
-            case USER_BOT -> telegramBotProperties.memberBot().username();
-        };
+        String botUsername = resolveBotUsername(botType);
         return DEEP_LINK_BASE_URL + botUsername + DEEP_LINK_START_PARAM + uuid;
+    }
+
+    /**
+     * Admin이 admin 봇에서 실수로 자연어를 보낼때 member 딥링크를 보냅니다 그 과정에서 이미 member에 연동되어있는 admin은
+     * redirect url만 주고 member에 연동되지 않은 admin일 경우는 연동할 수 있는 딥링크를 제공해줍니다.
+     * @param userId admin userId (따로 검증할 필요없음 admin 봇에서 제공해줌)
+     * @param botType 제공할 딥링크의 봇
+     * @return 리다이렉트 url
+     */
+    public String getRedirectUrl(Long userId, BotType botType) {
+        boolean alreadyLinked = isLinked(userId, botType);
+        if(alreadyLinked) {
+            return DEEP_LINK_BASE_URL + resolveBotUsername(botType);
+        }
+        return getDeepLinkUrl(userId, botType);
     }
     /**
      * 딥 링크 연동 시 UUID를 발급
@@ -89,7 +111,40 @@ public class TelegramLinkTokenService {
      * @param botType ADMIN_BOT 또는 USER_BOT
      * @return 연동 여부
      */
+    @Transactional(readOnly = true)
     public boolean isLinked(Long userId, BotType botType) {
         return telegramSubscriptionRepository.existsByUserIdAndBotType(userId, botType);
+    }
+
+    /**
+     * chatId와 botType으로 연동된 유저 id를 조회한다.
+     *
+     * @param chatId  대상 텔레그램 chat_id
+     * @param botType ADMIN_BOT 또는 USER_BOT
+     * @return 연동된 유저 id
+     */
+    @Transactional(readOnly = true)
+    public Long getUserIdByChatId(String chatId, BotType botType) {
+        if(chatId == null){
+            throw new MissingChatIdException();
+        }
+        return telegramSubscriptionRepository.findByChatIdAndBotType(chatId, botType)
+                .map(TelegramSubscription::getUserId)
+                .orElseThrow(TelegramSubscriptionNotFoundException::new);
+    }
+
+
+
+    /**
+     * 봇 타입에 해당하는 텔레그램 봇 username을 반환한다.
+     *
+     * @param botType ADMIN_BOT 또는 USER_BOT
+     * @return 해당 봇의 username
+     */
+    private String resolveBotUsername(BotType botType) {
+        return switch (botType) {
+            case ADMIN_BOT -> telegramBotProperties.adminBot().username();
+            case USER_BOT -> telegramBotProperties.memberBot().username();
+        };
     }
 }
