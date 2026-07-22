@@ -17,24 +17,60 @@ public class TelegramMessageService {
     private final TelegramSender adminTelegramSender;
     private final TelegramSender memberTelegramSender;
 
+    /**
+     * 딥링크 토큰이 만료됐거나 이미 사용됐을 때 재발급 안내 메시지를 보낸다.
+     */
     public void sendTokenExpiredMessage(String chatId, BotType botType) {
         String text = "링크가 만료되었거나 이미 사용되었습니다. 앱에서 텔레그램 연동을 다시 요청해 주세요";
         sendMessage(chatId, botType, text, "링크 만료 안내");
     }
 
+    /**
+     * 텔레그램 연동이 성공했을 때 환영 메시지를 보낸다.
+     */
     public void sendLinkSuccessMessage(String chatId, BotType botType) {
         String text = "환영합니다! 성공적으로 연동되었습니다.";
         sendMessage(chatId, botType, text, "연동 성공 안내");
     }
 
+    /**
+     * Admin 봇에 자유 텍스트가 온 경우, Member 봇으로 이동하라는 안내와 딥링크를 보낸다.
+     */
     public void sendRedirectToUserBotMessage(String chatId, String deepLinkUrl) {
         String text = "4iren-운영진 봇은 질의응답을 제공하지 않습니다. 전체 이용가능한 봇으로 이동하세요\n" + deepLinkUrl;
         sendMessage(chatId, BotType.ADMIN_BOT, text, "운영진 봇 안내");
     }
 
+    /**
+     * 텍스트가 아닌 메시지(사진/스티커 등)를 받았을 때 지원하지 않는다는 안내를 보낸다.
+     */
     public void sendUnsupportedContentMessage(String chatId, BotType botType) {
         String text = "죄송합니다, 지금은 텍스트 메시지만 이해할 수 있습니다.";
         sendMessage(chatId,botType, text, "지원하지 않는 콘텐츠 안내");
+    }
+
+    /**
+     * 의도분류 결과가 FALLBACK일 때(무슨 말인지 못 알아들었을 때) 안내 메시지를 보낸다.
+     */
+    public void sendFallbackMessage(String chatId, BotType botType) {
+        String text = "음, 무슨 말씀인지 잘 이해하지 못했어요. 강의실 환경이 어떤지 물어보시거나(예: \"지금 온도 어때?\"), 느끼신 걸 편하게 남겨주세요(예: \"너무 더워요\")!";
+        sendMessage(chatId,botType,text,"자연어처리에 대한 fallback메시지");
+    }
+
+    /**
+     * 아직 텔레그램 연동이 안 된 유저가 메시지를 보냈을 때 연동 안내를 보낸다.
+     */
+    public void sendNotLinkedGuideMessage(String chatId, BotType botType) {
+        String text = "아직 텔레그램 연동이 안 되어 있어요. 웹에서 먼저 연동을 진행해 주세요.";
+        sendMessage(chatId, botType, text, "미연동 안내");
+    }
+
+    /**
+     * Core API 응답 실패(서킷브레이커 open 등)로 조회범위를 못 가져왔을 때 안내를 보낸다.
+     */
+    public void sendCoreApiUnavailableMessage(String chatId, BotType botType) {
+        String text = "지금은 확인이 어려워요, 잠시 후 다시 시도해주세요.";
+        sendMessage(chatId, botType, text, "Core API 응답 실패 안내");
     }
 
     /**
