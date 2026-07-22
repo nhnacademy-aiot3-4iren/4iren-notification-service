@@ -1,6 +1,7 @@
 package com.siren.notificationservice.telegram.messaging;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
 import com.siren.notificationservice.telegram.agent.IntentClassificationAgent;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
@@ -46,7 +47,7 @@ public class TelegramInboundListener {
         } else if (update.hasMessage() && update.getMessage().hasText()) {
             handleIntentFreeText(event);
         }else if(update.hasMessage()) {
-            handleNothing(event);
+            handleUnsupportedContent(event);
         }
         // 그 외(callback_query 등 메시지 자체가 없는 업데이트)는 여전히 무시
     }
@@ -85,9 +86,7 @@ public class TelegramInboundListener {
      * @param event  원본 이벤트 (botType 확인용)
      */
     private void handleExpiredToken(TelegramInboundEvent event) {
-        Update update = event.update();
-        String chatId = update.getMessage().getChatId().toString();
-        telegramMessageService.sendTokenExpiredMessage(chatId, event.botType());
+        telegramMessageService.sendTokenExpiredMessage(event.chatId(), event.botType());
     }
 
     /**
@@ -96,9 +95,7 @@ public class TelegramInboundListener {
      * @param event  원본 이벤트 (botType 확인용)
      */
     private void handleSuccessLink(TelegramInboundEvent event){
-        Update update = event.update();
-        String chatId = update.getMessage().getChatId().toString();
-        telegramMessageService.sendLinkSuccessMessage(chatId, event.botType());
+        telegramMessageService.sendLinkSuccessMessage(event.chatId(), event.botType());
     }
 
     /**
@@ -106,22 +103,26 @@ public class TelegramInboundListener {
      * @param event
      */
     private void handleIntentFreeText(TelegramInboundEvent event) {
-        Update update = event.update();
-        String chatId = update.getMessage().getChatId().toString();
+        String chatId = event.chatId();
+        Long userId;
+        try {
+            userId = telegramLinkTokenService.getUserIdByChatId(chatId, event.botType());
+        } catch (TelegramSubscriptionNotFoundException e) {
+            telegramMessageService.sendNotLinkedGuideMessage(chatId, event.botType());
+            return;
+        }
+
         if(event.botType() == BotType.ADMIN_BOT){
-            Long userId = telegramSubscriptionService.getUserIdByChatId(chatId, BotType.ADMIN_BOT);
-            String deepLinkUrl = telegramLinkTokenService.getDeepLinkUrl(userId, BotType.USER_BOT);
+            String deepLinkUrl = telegramLinkTokenService.getRedirectUrl(userId, BotType.USER_BOT);
             telegramMessageService.sendRedirectToUserBotMessage(chatId, deepLinkUrl);
             return;
         }
 
-        intentClassificationAgent.classify(event);
+        intentClassificationAgent.classify(event, userId);
     }
 
-    private void handleNothing(TelegramInboundEvent event) {
-        Update update = event.update();
-        String chatId = update.getMessage().getChatId().toString();
-        telegramMessageService.sendUnsupportedContentMessage(chatId, event.botType());
+    private void handleUnsupportedContent(TelegramInboundEvent event) {
+        telegramMessageService.sendUnsupportedContentMessage(event.chatId(), event.botType());
     }
 
 }
