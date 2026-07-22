@@ -1,9 +1,6 @@
 package com.siren.notificationservice.telegram.service;
 
-import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.table.TelegramSubscription;
-import com.siren.notificationservice.core.exception.MissingChatIdException;
-import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
 import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import lombok.RequiredArgsConstructor;
@@ -37,8 +34,7 @@ public class TelegramSubscriptionService {
      * @param userId 토큰에 매핑된 유저 id
      */
     public void handleValidStart(TelegramInboundEvent event, Long userId) {
-        Update update = event.update();
-        String chatId = update.getMessage().getChatId().toString();
+        String chatId = event.chatId();
         ZonedDateTime now = ZonedDateTime.now();
 
         // 연동이 최초인지, 재연동인지 판단
@@ -78,14 +74,5 @@ public class TelegramSubscriptionService {
         } else if (ChatMemberMember.STATUS.equals(newStatus)) { //사용자가 봇 차단 해제
             telegramSubscription.ifPresent(TelegramSubscription::unblock);
         }
-    }
-
-    public Long getUserIdByChatId(String chatId, BotType botType) {
-        if(chatId == null){
-            throw new MissingChatIdException();
-        }
-        return telegramSubscriptionRepository.findByChatIdAndBotType(chatId, botType)
-                .map(TelegramSubscription::getUserId)
-                .orElseThrow(TelegramSubscriptionNotFoundException::new);
     }
 }

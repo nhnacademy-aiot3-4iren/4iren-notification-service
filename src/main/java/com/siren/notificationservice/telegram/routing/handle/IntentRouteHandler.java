@@ -17,5 +17,5 @@ public interface IntentRouteHandler {
      *
      * @param event 원본 텔레그램 인바운드 이벤트
      */
-    void handle(TelegramInboundEvent event);
+    void handle(TelegramInboundEvent event, Long userId);
 }
