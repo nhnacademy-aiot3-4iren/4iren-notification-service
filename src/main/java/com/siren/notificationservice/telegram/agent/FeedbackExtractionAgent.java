@@ -6,12 +6,14 @@ import com.siren.notificationservice.core.entity.domain.SensorType;
 import com.siren.notificationservice.telegram.dto.feedback.FeedbackExtractionResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -54,6 +56,16 @@ public class FeedbackExtractionAgent {
         - "그냥 좀 졸리네요" -> sensorScores: [], isDelayed: false, experiencedHour: null, experiencedMeridiem: null, experiencedMinute: null, mentionedRoomName: null
         """;
 
+    // %s 위치 인자 대신 이름 있는 변수를 써서, 나중에 텍스트 순서를 바꾸다가
+    // 인자 순서가 어긋나 엉뚱한 값이 들어가는 실수를 방지한다.
+    private static final PromptTemplate USER_MESSAGE_TEMPLATE = new PromptTemplate("""
+            [구독 중인 강의실 목록]
+            {roomNames}
+
+            [피드백 원문]
+            {rawText}
+            """);
+
     private final ObjectMapper objectMapper;
     private final ChatClient chatClient;
 
@@ -76,13 +88,10 @@ public class FeedbackExtractionAgent {
      */
     public FeedbackExtractionResult extract(String rawText, List<String> subscribedRoomNames) {
         try {
-            String userMessage = """
-                [구독 중인 강의실 목록]
-                %s
-
-                [피드백 원문]
-                %s
-                """.formatted(String.join(", ", subscribedRoomNames), rawText);
+            String userMessage = USER_MESSAGE_TEMPLATE.render(Map.of(
+                    "roomNames", String.join(", ", subscribedRoomNames),
+                    "rawText", rawText
+            ));
 
             String json = chatClient.prompt()
                     .user(userMessage)
@@ -138,7 +147,7 @@ public class FeedbackExtractionAgent {
 
     /**
      * 강의실 이름(외부 데이터, Core API 유래)을 JSON 스키마 enum에 안전하게 끼워 넣기 위해
-     * 따옴표/역슬래시 등을 이스케이프한 JSON 문자열 리터럴로 변환한다.
+     * 따옴표/역슬래시 등을 이스케이프한 JSON 문자열 리터럴로 변환.
      */
     private String toJsonStringLiteral(String value) {
         try {
