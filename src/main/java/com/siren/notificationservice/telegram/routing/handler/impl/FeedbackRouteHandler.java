@@ -1,11 +1,11 @@
 package com.siren.notificationservice.telegram.routing.handler.impl;
 
 import com.siren.notificationservice.core.client.CoreApiClient;
-import com.siren.notificationservice.core.dto.PendingUserReply;
+import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
 import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
+import com.siren.notificationservice.core.service.FeedbackExtractionCacheService;
 import com.siren.notificationservice.core.service.FeedbackRoomResolver;
-import com.siren.notificationservice.core.service.PendingUserReplyService;
 import com.siren.notificationservice.telegram.agent.FeedbackExtractionAgent;
 import com.siren.notificationservice.telegram.dto.event.FeedbackProcessingEvent;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
@@ -29,7 +29,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class FeedbackRouteHandler implements IntentRouteHandler {
     private final TelegramMessageService telegramMessageService;
-    private final PendingUserReplyService pendingUserReplyService;
+    private final FeedbackExtractionCacheService feedbackExtractionCacheService;
     private final CoreApiClient coreApiClient;
     private final FeedbackExtractionAgent feedbackExtractionAgent;
     private final FeedbackRoomResolver feedbackRoomResolver;
@@ -64,6 +64,7 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
         List<String> subscribedRoomNames = subscribedRooms.stream()
                 .map(UserRoomSubResponse.RoomSubResponse::roomName)
                 .toList();
+
         FeedbackExtractionResult feedbackExtractionResult = feedbackExtractionAgent.extract(rawText, subscribedRoomNames);
 
         // 3. roomId를 후보 소스 순서대로 시도: 텍스트 언급 -> 마지막 언급 강의실 -> 구독 1개뿐인 경우
@@ -80,28 +81,28 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
     }
 
     /**
-     * 되묻기 대기 중이던 유저의 답변(강의실 이름)을 처리한다.
-     * 후보 중 정확히 하나만 매칭되면 대기 상태를 지우고 원본 피드백 처리를 이어가고,
-     * 매칭 안 되거나 여러 개 매칭되면 다시 물어본다.
+     * 강의실 확정 버튼(콜백)으로 들어온 답변을 처리한다.
+     * 후보 중 정확히 하나와 일치하면 캐시를 지우고 원본 피드백 처리를 이어가고,
+     * 일치하지 않으면(이론상 버튼이면 항상 일치해야 함) 다시 물어본다.
      *
-     * @param event            원본 텔레그램 인바운드 이벤트 (강의실 이름 답변)
-     * @param userId           채팅 유저
-     * @param pendingUserReply 대기 중이던 원본 피드백 원문 + 후보 강의실 목록
+     * @param event 원본 텔레그램 인바운드 이벤트 (강의실 선택 콜백)
+     * @param userId 채팅 유저
+     * @param cache 확정 전까지 보관해뒀던 원본 피드백 원문 + 후보 강의실 목록 + 추출 결과
      */
-    public void handleUserReply(TelegramInboundEvent event, Long userId, PendingUserReply pendingUserReply) {
+    public void handleUserReply(TelegramInboundEvent event, Long userId, FeedbackExtractionCache cache) {
 
-        Optional<Long> roomId = feedbackRoomResolver.matchReply(event.question(), userId,pendingUserReply.candidates());
+        Optional<Long> roomId = feedbackRoomResolver.matchReply(event.question(), userId, cache.candidates());
 
         if (roomId.isEmpty()) {
-            List<String> roomNames = pendingUserReply.candidates().stream()
-                    .map(PendingUserReply.RoomCandidate::roomName)
+            List<String> roomNames = cache.candidates().stream()
+                    .map(FeedbackExtractionCache.RoomCandidate::roomName)
                     .toList();
             telegramMessageService.sendRoomDisambiguationRetryMessage(event.chatId(), event.botType(), roomNames);
             return;
         }
 
-        pendingUserReplyService.clear(userId);
-        proceedWithConfirmedRoom(event, userId, pendingUserReply.rawText(), roomId.get(), pendingUserReply.feedbackExtractionResult());
+        feedbackExtractionCacheService.clear(userId);
+        proceedWithConfirmedRoom(event, userId, cache.rawText(), roomId.get(), cache.feedbackExtractionResult());
     }
 
 
@@ -131,17 +132,18 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
 
 
     private void askWhichRoom(TelegramInboundEvent event, Long userId, String rawText, List<UserRoomSubResponse.RoomSubResponse> rooms, FeedbackExtractionResult feedbackExtractionResult) {
-        List<PendingUserReply.RoomCandidate> candidates = rooms.stream()
-                .map(r -> new PendingUserReply.RoomCandidate(r.roomId(), r.roomName()))
+        List<FeedbackExtractionCache.RoomCandidate> candidates = rooms.stream()
+                .map(r -> new FeedbackExtractionCache.RoomCandidate(r.roomId(), r.roomName()))
                 .toList();
-        boolean saved = pendingUserReplyService.save(userId, new PendingUserReply(rawText, candidates, feedbackExtractionResult));
+        boolean saved = feedbackExtractionCacheService.save(userId, new FeedbackExtractionCache(rawText, candidates, feedbackExtractionResult)); // 강의실 확정될 때까지 추출 결과 캐싱
 
-        if(!saved) {
+        if(!saved) { //저장 실패시
             telegramMessageService.sendFeedbackProcessingFailedMessage(event.chatId(), event.botType());
             return;
         }
-        List<String> roomNames = candidates.stream().map(PendingUserReply.RoomCandidate::roomName).toList();
-        telegramMessageService.sendRoomDisambiguationAskMessage(event.chatId(), event.botType(), roomNames);
+
+        List<String> roomNames = candidates.stream().map(FeedbackExtractionCache.RoomCandidate::roomName).toList();
+        telegramMessageService.sendRoomDisambiguationAskMessage(event.chatId(), event.botType(), roomNames); //인라인 버튼으로 유저에게 물어봄
     }
 
 }

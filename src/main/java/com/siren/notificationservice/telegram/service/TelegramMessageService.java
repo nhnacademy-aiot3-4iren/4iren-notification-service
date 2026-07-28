@@ -1,12 +1,15 @@
 package com.siren.notificationservice.telegram.service;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.config.TelegramSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
@@ -80,9 +83,8 @@ public class TelegramMessageService {
      * 되묻기 답변이 후보 강의실과 매칭 안 됐을 때, 후보 목록을 다시 보여주며 재질문한다.
      */
     public void sendRoomDisambiguationRetryMessage(String chatId, BotType botType, List<String> roomNames) {
-        String roomList = String.join(", ", roomNames);
-        String text = "음, 어느 강의실인지 잘 모르겠어요. " + roomList + " 중에서 다시 한 번 말씀해주시겠어요?";
-        sendMessage(chatId, botType, text, "되묻기 중 매칭X");
+        String text = "음, 어느 강의실인지 잘 모르겠어요. 아래에서 다시 골라주세요.";
+        sendInlineKeyboardMessage(chatId, botType, text, CallbackActionType.FEEDBACK_ROOM_SELECT, roomNames);
     }
 
     /**
@@ -97,9 +99,8 @@ public class TelegramMessageService {
      * 구독 강의실이 여러 개라 어느 강의실 피드백인지 모호할 때, 후보 목록을 보여주며 되묻는다.
      */
     public void sendRoomDisambiguationAskMessage(String chatId, BotType botType, List<String> roomNames) {
-        String roomList = String.join(", ", roomNames);
-        String text = "구독하신 강의실 목록: " + roomList + " 중에서 어느 강의실 얘기이신가요?";
-        sendMessage(chatId, botType, text, "강의실 되묻기");
+        String text = "구독하신 강의실 목록 중에서 어느 강의실 얘기이신가요?";
+        sendInlineKeyboardMessage(chatId, botType, text, CallbackActionType.FEEDBACK_ROOM_SELECT, roomNames);
     }
     /**
      * 피드백이 접수됐을 때 소프트 확언을 보낸다. 실제 조치를 확언하는 게 아니라
@@ -153,6 +154,40 @@ public class TelegramMessageService {
             }
         } catch (TelegramApiException e) {
             log.warn("{} 발송 실패 (botType={}, chatId={})", context, botType, chatId, e);
+        }
+    }
+
+    /**
+     * 선택지를 인라인 키보드 버튼으로 보여주고 발송한다. 각 버튼의 callback_data는
+     * "{actionType.prefix()}:{선택지 텍스트}" 형식 — 탭하면 그 선택지 텍스트가 그대로
+     * TelegramInboundEvent.question()으로 돌아오게 만드는 규칙(CallbackActionType 참고).
+     */
+    public void sendInlineKeyboardMessage(String chatId, BotType botType, String text,
+                                          CallbackActionType actionType, List<String> options) {
+        List<List<InlineKeyboardButton>> keyboard = options.stream()
+                .map(option -> InlineKeyboardButton.builder()
+                        .text(option)
+                        .callbackData(actionType.prefix() + ":" + option)
+                        .build())
+                .map(List::of) // 한 줄에 버튼 하나씩 - 강의실 이름 길이가 들쭉날쭉해도 안전
+                .toList();
+
+        SendMessage message = SendMessage.builder()
+                .chatId(chatId)
+                .text(text)
+                .replyMarkup(InlineKeyboardMarkup.builder().keyboard(keyboard).build())
+                .build();
+
+        try {
+            resolveTelegramSender(botType).execute(message);
+        } catch (TelegramApiRequestException e) {
+            if (Integer.valueOf(403).equals(e.getErrorCode())) {
+                log.info("인라인 키보드 발송 불가 - 봇 차단 상태 (botType={}, chatId={})", botType, chatId);
+            } else {
+                log.warn("인라인 키보드 발송 실패 (botType={}, chatId={}, errorCode={})", botType, chatId, e.getErrorCode(), e);
+            }
+        } catch (TelegramApiException e) {
+            log.warn("인라인 키보드 발송 실패 (botType={}, chatId={})", botType, chatId, e);
         }
     }
 
