@@ -14,6 +14,9 @@ public record TelegramInboundEvent(
      * @return 유저의 채팅방 아이디
      */
     public String chatId() {
+        if(update.hasCallbackQuery()){
+            return update.getCallbackQuery().getMessage().getChatId().toString();
+        }
         return update.getMessage().getChatId().toString();
     }
 
@@ -21,6 +24,9 @@ public record TelegramInboundEvent(
      * @return 유저가 보낸 메세지
      */
     public String question(){
+        if(update.hasCallbackQuery()){
+            return update.getCallbackQuery().getData(); // "FB_ROOM:301호 원본 그대로 - 접두사 파싱은 라우팅에서 할것"
+        }
         return update.getMessage().getText();
     }
 

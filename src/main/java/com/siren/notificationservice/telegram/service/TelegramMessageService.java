@@ -5,6 +5,7 @@ import com.siren.notificationservice.telegram.config.TelegramSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
@@ -116,6 +117,21 @@ public class TelegramMessageService {
     public void sendFeedbackProcessingFailedMessage(String chatId, BotType botType) {
         String text = "지금은 의견을 접수하기 어려워요, 잠시 후 다시 시도해주세요.";
         sendMessage(chatId, botType, text, "피드백 처리 실패 안내");
+    }
+
+    /**
+     * 인라인 키보드 탭에 응답한다 — 안 부르면 텔레그램 클라이언트에 로딩 스피너가 계속 돈다.
+     * 콜백 처리 성공/실패와 무관하게 항상 먼저(또는 처리 직후) 호출해야 한다.
+     */
+    public void answerCallback(String callbackQueryId, BotType botType) {
+        AnswerCallbackQuery answer = AnswerCallbackQuery.builder()
+                .callbackQueryId(callbackQueryId)
+                .build();
+        try {
+            resolveTelegramSender(botType).execute(answer);
+        } catch (TelegramApiException e) {
+            log.warn("콜백 응답 실패 (botType={}, callbackQueryId={})", botType, callbackQueryId, e);
+        }
     }
 
     /**
