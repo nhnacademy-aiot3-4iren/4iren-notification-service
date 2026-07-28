@@ -9,6 +9,8 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -71,6 +73,49 @@ public class TelegramMessageService {
     public void sendCoreApiUnavailableMessage(String chatId, BotType botType) {
         String text = "지금은 확인이 어려워요, 잠시 후 다시 시도해주세요.";
         sendMessage(chatId, botType, text, "Core API 응답 실패 안내");
+    }
+
+    /**
+     * 되묻기 답변이 후보 강의실과 매칭 안 됐을 때, 후보 목록을 다시 보여주며 재질문한다.
+     */
+    public void sendRoomDisambiguationRetryMessage(String chatId, BotType botType, List<String> roomNames) {
+        String roomList = String.join(", ", roomNames);
+        String text = "음, 어느 강의실인지 잘 모르겠어요. " + roomList + " 중에서 다시 한 번 말씀해주시겠어요?";
+        sendMessage(chatId, botType, text, "되묻기 중 매칭X");
+    }
+
+    /**
+     * 구독한 강의실이 하나도 없는 유저가 피드백을 남기려 할 때 안내한다.
+     */
+    public void sendNoSubscribedRoomMessage(String chatId, BotType botType) {
+        String text = "현재 구독한 강의실이 없어요. 먼저 강의실을 구독해 주세요.";
+        sendMessage(chatId,botType,text,"구독 강의실 없음 안내");
+    }
+
+    /**
+     * 구독 강의실이 여러 개라 어느 강의실 피드백인지 모호할 때, 후보 목록을 보여주며 되묻는다.
+     */
+    public void sendRoomDisambiguationAskMessage(String chatId, BotType botType, List<String> roomNames) {
+        String roomList = String.join(", ", roomNames);
+        String text = "구독하신 강의실 목록: " + roomList + " 중에서 어느 강의실 얘기이신가요?";
+        sendMessage(chatId, botType, text, "강의실 되묻기");
+    }
+    /**
+     * 피드백이 접수됐을 때 소프트 확언을 보낸다. 실제 조치를 확언하는 게 아니라
+     * "의견을 받았다"는 것만 알린다 — 온도를 바꿔주겠다는 식의 약속이 아님.
+     */
+    public void sendFeedbackAcknowledgeMessage(String chatId, BotType botType) {
+        String text = "의견을 반영하여 더 나은 강의실 환경을 만들겠습니다.";
+        sendMessage(chatId, botType, text, "피드백 접수 확언");
+    }
+
+    /**
+     * 피드백 처리 큐 publish 실패 등, 내부 처리 단계에서 문제가 생겼을 때 안내한다.
+     * Core API 실패({@link #sendCoreApiUnavailableMessage})와 구분되는 별도 원인이라 전용 메서드로 분리.
+     */
+    public void sendFeedbackProcessingFailedMessage(String chatId, BotType botType) {
+        String text = "지금은 의견을 접수하기 어려워요, 잠시 후 다시 시도해주세요.";
+        sendMessage(chatId, botType, text, "피드백 처리 실패 안내");
     }
 
     /**

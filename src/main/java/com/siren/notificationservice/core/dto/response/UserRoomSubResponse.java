@@ -10,6 +10,7 @@ public record UserRoomSubResponse(
 ) {
     public record RoomSubResponse(
             @JsonProperty("roomId") Long roomId,
+            @JsonProperty("roomName")String roomName,
             @JsonProperty("notificationEnabled") boolean notificationEnabled) {
     }
 }

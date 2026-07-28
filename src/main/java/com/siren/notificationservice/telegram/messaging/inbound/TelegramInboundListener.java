@@ -1,9 +1,12 @@
-package com.siren.notificationservice.telegram.messaging;
+package com.siren.notificationservice.telegram.messaging.inbound;
 
+import com.siren.notificationservice.core.dto.PendingUserReply;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
+import com.siren.notificationservice.core.service.PendingUserReplyService;
 import com.siren.notificationservice.telegram.agent.IntentClassificationAgent;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
+import com.siren.notificationservice.telegram.routing.handler.impl.FeedbackRouteHandler;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
 import com.siren.notificationservice.telegram.service.TelegramMessageService;
 import com.siren.notificationservice.telegram.service.TelegramSubscriptionService;
@@ -29,7 +32,8 @@ public class TelegramInboundListener {
     private final TelegramSubscriptionService telegramSubscriptionService;
     private final IntentClassificationAgent intentClassificationAgent;
     private final TelegramMessageService telegramMessageService;
-
+    private final PendingUserReplyService pendingUserReplyService;
+    private final FeedbackRouteHandler feedbackRouteHandler;
     /**
      * 큐에 쌓인 텔레그램 업데이트를 update 종류별로 분기 처리한다.
      *
@@ -106,15 +110,23 @@ public class TelegramInboundListener {
         String chatId = event.chatId();
         Long userId;
         try {
-            userId = telegramLinkTokenService.getUserIdByChatId(chatId, event.botType());
+            userId = telegramLinkTokenService.getUserIdByChatId(chatId, event.botType()); // 해당 chatId의 userId를 찾음 (연동 여부체크)
         } catch (TelegramSubscriptionNotFoundException e) {
-            telegramMessageService.sendNotLinkedGuideMessage(chatId, event.botType());
+            telegramMessageService.sendNotLinkedGuideMessage(chatId, event.botType()); // 예외 시 연동해달라고 메시지보냄
             return;
         }
 
-        if(event.botType() == BotType.ADMIN_BOT){
+        if(event.botType() == BotType.ADMIN_BOT){ // admin bot일 시 자유텍스트를 지원하지않음
             String deepLinkUrl = telegramLinkTokenService.getRedirectUrl(userId, BotType.USER_BOT);
             telegramMessageService.sendRedirectToUserBotMessage(chatId, deepLinkUrl);
+            return;
+        }
+
+        // 텔레그램 봇 상태가 되묻는 중이었으면 의도분류 건너뛰고 답변으로 처리
+        Optional< PendingUserReply> pending = pendingUserReplyService.find(userId);
+
+        if (pending.isPresent()) {
+            feedbackRouteHandler.handleUserReply(event,userId, pending.get());
             return;
         }
 

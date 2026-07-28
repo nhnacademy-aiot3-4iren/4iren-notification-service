@@ -23,6 +23,15 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.routing-key.telegram-inbound}")
     private String telegramInboundRoutingKey;
 
+    @Value("${rabbitmq.exchange.notification-internal}")
+    private String notificationInternalExchangeName;
+
+    @Value("${rabbitmq.queue.feedback-processing}")
+    private String feedbackProcessingQueueName;
+
+    @Value("${rabbitmq.routing-key.feedback-processing}")
+    private String feedbackProcessingRoutingKey;
+
     /**
      * Account API 등 외부 서비스가 발행하는 JSON 이벤트를 로컬 DTO로 역직렬화한다.
      * 기본값(__TypeId__ 헤더 기반)으로 두면 발행 측 클래스의 FQCN을 그대로 찾으려 해서
@@ -49,12 +58,31 @@ public class RabbitMQConfig {
     }
 
     /**
+     * feedback 수집 및 저장을 위한 exchange (telegram-events와 별개 — 텔레그램 인바운드가 아니라
+     * 확정된 도메인 이벤트를 다루는 내부 파이프라인이라 의미상 분리)
+     *
+     * @return notification-internal 익스체인지
+     */
+    @Bean
+    public TopicExchange notificationInternalExchange() {
+        return new TopicExchange(notificationInternalExchangeName);
+    }
+
+    /**
      * Telegram inbound queue
      * @return durable 큐
      */
     @Bean
     public Queue telegramInboundQueue() {
         return new Queue(telegramInboundQueueName, true);
+    }
+
+    /**
+     * 피드백 확정 후 무거운 처리(환경 스냅샷 조회 + DB 저장)를 비동기로 넘기는 내부 큐.
+     */
+    @Bean
+    public Queue feedbackProcessingQueue() {
+        return new Queue(feedbackProcessingQueueName, true);
     }
 
     /**
@@ -67,4 +95,16 @@ public class RabbitMQConfig {
     public Binding telegramInboundBinding(Queue telegramInboundQueue, TopicExchange telegramEventsExchange) {
         return BindingBuilder.bind(telegramInboundQueue).to(telegramEventsExchange).with(telegramInboundRoutingKey);
     }
+
+    /**
+     * feedbackProcessingQueue를 notificationInternalExchange()의 feedbackProcessingRoutingKey에 바인딩한다.
+     * @param feedbackProcessingQueue 피드백 처리 큐
+     * @param notificationInternalExchange notification 내부 익스체인지
+     * @return 큐-익스체인지 바인딩
+     */
+    @Bean
+    public Binding feedbackProcessingBinding(Queue feedbackProcessingQueue, TopicExchange notificationInternalExchange) {
+        return BindingBuilder.bind(feedbackProcessingQueue).to(notificationInternalExchange).with(feedbackProcessingRoutingKey);
+    }
+
 }
