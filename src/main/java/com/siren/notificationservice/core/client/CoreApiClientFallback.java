@@ -15,6 +15,6 @@ public class CoreApiClientFallback implements CoreApiClient {
 
     @Override
     public RoomEnvironmentReadingResponse getRoomEnvironments(Long roomId, String referenceAtParam) {
-        throw new CoreApiUnavailableException(roomId, "userId");
+        throw new CoreApiUnavailableException(roomId, "roomId");
     }
 }

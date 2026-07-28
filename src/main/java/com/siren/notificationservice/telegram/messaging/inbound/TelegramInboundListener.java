@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.Optional;
@@ -52,6 +53,8 @@ public class TelegramInboundListener {
             handleIntentFreeText(event);
         }else if(update.hasMessage()) {
             handleUnsupportedContent(event);
+        }else if(update.hasCallbackQuery()){
+            handleCallbackQuery(event);
         }
         // 그 외(callback_query 등 메시지 자체가 없는 업데이트)는 여전히 무시
     }
@@ -131,6 +134,14 @@ public class TelegramInboundListener {
         }
 
         intentClassificationAgent.classify(event, userId);
+    }
+
+    private void handleCallbackQuery(TelegramInboundEvent event) {
+        CallbackQuery callbackQuery = event.update().getCallbackQuery();
+        telegramMessageService.answerCallback(callbackQuery.getId(), event.botType());
+        // TODO(#78): callback_data 접두사로 FEEDBACK/QUESTION 분기
+        log.info("콜백 수신 (botType={}, chatId={}, data={})", event.botType(), event.chatId(), event.question());
+
     }
 
     private void handleUnsupportedContent(TelegramInboundEvent event) {
