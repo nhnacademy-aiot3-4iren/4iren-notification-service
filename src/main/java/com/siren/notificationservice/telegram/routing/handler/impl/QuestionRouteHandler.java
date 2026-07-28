@@ -31,6 +31,7 @@ public class QuestionRouteHandler implements IntentRouteHandler {
         return IntentType.QUESTION;
     }
 
+
     @Override
     public void handle(TelegramInboundEvent event, Long userId) {
         // 대화에서 마지막으로 언급된 구독 방 조회
