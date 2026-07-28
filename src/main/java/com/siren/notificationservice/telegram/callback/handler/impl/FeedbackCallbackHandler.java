@@ -1,7 +1,7 @@
 package com.siren.notificationservice.telegram.callback.handler.impl;
 
-import com.siren.notificationservice.core.dto.PendingUserReply;
-import com.siren.notificationservice.core.service.PendingUserReplyService;
+import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
+import com.siren.notificationservice.core.service.FeedbackExtractionCacheService;
 import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.callback.handler.CallbackRouteHandler;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
@@ -15,7 +15,7 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 public class FeedbackCallbackHandler implements CallbackRouteHandler {
-    private final PendingUserReplyService pendingUserReplyService;
+    private final FeedbackExtractionCacheService feedbackExtractionCacheService;
     private final FeedbackRouteHandler feedbackRouteHandler;
     private final TelegramMessageService telegramMessageService;
 
@@ -26,11 +26,11 @@ public class FeedbackCallbackHandler implements CallbackRouteHandler {
 
     @Override
     public void handle(TelegramInboundEvent event, Long userId) {
-        Optional<PendingUserReply> pending = pendingUserReplyService.find(userId);;
-        if(pending.isEmpty()) {
+        Optional<FeedbackExtractionCache> cache = feedbackExtractionCacheService.find(userId);
+        if(cache.isEmpty()) {
             telegramMessageService.sendFeedbackProcessingFailedMessage(event.chatId(), event.botType());
             return;
         }
-        feedbackRouteHandler.handleUserReply(event, userId, pending.get());
+        feedbackRouteHandler.handleUserReply(event, userId, cache.get());
     }
 }

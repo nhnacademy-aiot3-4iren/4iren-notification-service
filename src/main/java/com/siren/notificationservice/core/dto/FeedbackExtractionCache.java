@@ -4,7 +4,7 @@ import com.siren.notificationservice.telegram.dto.feedback.FeedbackExtractionRes
 
 import java.util.List;
 
-public record PendingUserReply(
+public record FeedbackExtractionCache(
         String rawText,
         List<RoomCandidate> candidates,
         FeedbackExtractionResult feedbackExtractionResult

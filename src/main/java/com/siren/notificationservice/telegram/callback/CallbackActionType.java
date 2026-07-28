@@ -13,6 +13,7 @@ public enum CallbackActionType {
     }
 
     public String prefix() { return prefix; }
+
     public static Optional<CallbackActionType> fromPrefix(String prefix) {
         return Arrays.stream(values()).filter(t -> t.prefix.equals(prefix)).findFirst();
     }

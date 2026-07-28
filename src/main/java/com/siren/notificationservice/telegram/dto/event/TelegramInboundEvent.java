@@ -37,7 +37,7 @@ public record TelegramInboundEvent(
 
     /** 콜백일 때만 값이 있음 — 라우팅 전용, 비즈니스 로직에선 안 씀 */
     public Optional<CallbackActionType> callbackActionType(){
-        if(update.hasCallbackQuery()){
+        if(!update.hasCallbackQuery()){
             return Optional.empty();
         }
         String data = update.getCallbackQuery().getData();
