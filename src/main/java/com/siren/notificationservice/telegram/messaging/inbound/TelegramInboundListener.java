@@ -1,12 +1,11 @@
 package com.siren.notificationservice.telegram.messaging.inbound;
 
-import com.siren.notificationservice.core.dto.PendingUserReply;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
-import com.siren.notificationservice.core.service.PendingUserReplyService;
 import com.siren.notificationservice.telegram.agent.IntentClassificationAgent;
+import com.siren.notificationservice.telegram.callback.CallbackActionType;
+import com.siren.notificationservice.telegram.callback.handler.CallbackRouteDispatcher;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
-import com.siren.notificationservice.telegram.routing.handler.impl.FeedbackRouteHandler;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
 import com.siren.notificationservice.telegram.service.TelegramMessageService;
 import com.siren.notificationservice.telegram.service.TelegramSubscriptionService;
@@ -33,8 +32,7 @@ public class TelegramInboundListener {
     private final TelegramSubscriptionService telegramSubscriptionService;
     private final IntentClassificationAgent intentClassificationAgent;
     private final TelegramMessageService telegramMessageService;
-    private final PendingUserReplyService pendingUserReplyService;
-    private final FeedbackRouteHandler feedbackRouteHandler;
+    private final CallbackRouteDispatcher callbackRouteDispatcher;
     /**
      * 큐에 쌓인 텔레그램 업데이트를 update 종류별로 분기 처리한다.
      *
@@ -56,7 +54,6 @@ public class TelegramInboundListener {
         }else if(update.hasCallbackQuery()){
             handleCallbackQuery(event);
         }
-        // 그 외(callback_query 등 메시지 자체가 없는 업데이트)는 여전히 무시
     }
 
     /**
@@ -125,23 +122,30 @@ public class TelegramInboundListener {
             return;
         }
 
-        // 텔레그램 봇 상태가 되묻는 중이었으면 의도분류 건너뛰고 답변으로 처리
-        Optional< PendingUserReply> pending = pendingUserReplyService.find(userId);
-
-        if (pending.isPresent()) {
-            feedbackRouteHandler.handleUserReply(event,userId, pending.get());
-            return;
-        }
-
         intentClassificationAgent.classify(event, userId);
     }
 
     private void handleCallbackQuery(TelegramInboundEvent event) {
         CallbackQuery callbackQuery = event.update().getCallbackQuery();
         telegramMessageService.answerCallback(callbackQuery.getId(), event.botType());
-        // TODO(#78): callback_data 접두사로 FEEDBACK/QUESTION 분기
-        log.info("콜백 수신 (botType={}, chatId={}, data={})", event.botType(), event.chatId(), event.question());
 
+        String chatId = event.chatId();
+        Long userId;
+        try{
+            userId = telegramLinkTokenService.getUserIdByChatId(chatId, event.botType());
+        }catch (TelegramSubscriptionNotFoundException e) {
+            telegramMessageService.sendNotLinkedGuideMessage(chatId, event.botType());
+            return;
+        }
+
+        Optional<CallbackActionType> actionType = event.callbackActionType();
+
+        if (actionType.isEmpty()) {
+            log.warn("알 수 없는 콜백 형식 (chatId={}, data={})", chatId, callbackQuery.getData());
+            return;
+        }
+
+        callbackRouteDispatcher.dispatch(actionType.get(), event, userId);
     }
 
     private void handleUnsupportedContent(TelegramInboundEvent event) {
