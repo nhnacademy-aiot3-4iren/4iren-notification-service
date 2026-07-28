@@ -6,7 +6,7 @@ import java.util.List;
 public record RecommendationRequest(
         Long lastMentionRoomId,
         List<Long> subscribedRoomIds,
-        String question,
+        String message,
         LocalDateTime requestedAt
 ) {
 }

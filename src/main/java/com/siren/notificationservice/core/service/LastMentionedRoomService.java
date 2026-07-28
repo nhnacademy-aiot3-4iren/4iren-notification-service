@@ -29,7 +29,11 @@ public class LastMentionedRoomService {
      * @param roomId 마지막으로 언급된 방 아이디
      */
     public void save(Long userId, Long roomId){
-        stringRedisTemplate.opsForValue().set(key(userId), roomId.toString(), TTL);
+        try{
+            stringRedisTemplate.opsForValue().set(key(userId), roomId.toString(), TTL);
+        }catch (Exception e) {
+            log.warn("[LastMentionedRoomService] 저장 실패, 무시 (userId={}, roomId={})", userId, roomId, e);
+        }
     }
 
     /**
@@ -37,9 +41,14 @@ public class LastMentionedRoomService {
      * @param userId 채팅 유저
      * @return 마지막으로 언급된 방 조회값
      */
-    public Optional<Long> find(Long userId){
-        String value = stringRedisTemplate.opsForValue().get(key(userId));
-        return value == null ? Optional.empty() : Optional.of(Long.parseLong(value));
+    public Optional<Long> find(Long userId) {
+        try {
+            String value = stringRedisTemplate.opsForValue().get(key(userId));
+            return value == null ? Optional.empty() : Optional.of(Long.parseLong(value));
+        } catch (Exception e) {
+            log.warn("[LastMentionedRoomService] 조회 실패, 캐시 미스로 취급 (userId={})", userId, e);
+            return Optional.empty();
+        }
     }
 
     /**

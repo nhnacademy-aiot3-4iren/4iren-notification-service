@@ -15,13 +15,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 
 /**
  * 사용자가 텔레그램으로 남긴 강의실 환경 체감 피드백 한 건. 축별 점수는
  * {@link FeedbackScore}(key-value)로, 실내 환경 실측값은 {@link RoomEnvironmentSnapshot}/
- * {@link RoomEnvironmentReading}으로 분리돼 있다 — 이 엔티티는 원문/제출 메타데이터/외부 날씨만 담는다.
+ * {@link RoomEnvironmentReading}으로, 외부 날씨는 {@link OutsideWeatherSnapshot}으로
+ * 분리돼 있다 — 이 엔티티는 원문/제출 메타데이터만 담는다.
  */
 @Entity
 @Table(name = "feedback_log")
@@ -46,6 +46,14 @@ public class FeedbackLog {
     @JoinColumn(name = "snapshot_id")
     private RoomEnvironmentSnapshot snapshot;
 
+    /**
+     * 피드백 시점(정확히는 Core가 알려준 실제 날씨 데이터 시각) 기준 외부 날씨 스냅샷.
+     * 날씨 API 실패 시 NULL.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "outside_weather_snapshot_id")
+    private OutsideWeatherSnapshot outsideWeatherSnapshot;
+
     @Column(name = "raw_text", columnDefinition = "TEXT", nullable = false)
     private String rawText; // 피드백 원문 보존 (재분류/재학습 대비), 자연어 전용이라 항상 존재
 
@@ -57,15 +65,6 @@ public class FeedbackLog {
 
     @Column(name = "experienced_at")
     private ZonedDateTime experiencedAt; // 사용자가 언급한 구체적 체감 시각(있으면 환경 스냅샷 매칭 기준점), 없으면 NULL
-
-    @Column(name = "outside_temperature", nullable = false, precision = 4, scale = 1)
-    private BigDecimal outsideTemperature; // 시점 스냅샷 (평균 아님)
-
-    @Column(name = "outside_humidity", precision = 4, scale = 1)
-    private BigDecimal outsideHumidity; // 시점 스냅샷
-
-    @Column(name = "outside_condition", length = 10)
-    private String outsideCondition; // SUNNY/RAINY/SNOWY/CLOUDY/FOGGY 등
 
     @Column(name = "user_id", nullable = false)
     private Long userId; // Account API 소유 유저 id (bare, 로컬 FK 없음)

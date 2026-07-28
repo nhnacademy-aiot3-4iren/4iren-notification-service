@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.siren.notificationservice.telegram.dto.IntentClassificationResult;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.routing.IntentType;
-import com.siren.notificationservice.telegram.routing.handle.IntentRouteDispatcher;
+import com.siren.notificationservice.telegram.routing.handler.IntentRouteDispatcher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -32,14 +34,18 @@ public class IntentClassificationAgent {
         - intent 필드에는 FEEDBACK, QUESTION, FALLBACK 중 정확히 하나만 채운다.
         """;
     private final ObjectMapper objectMapper;
-    private final GoogleGenAiChatOptions googleGenAiChatOptions;
+    private final GoogleGenAiChatOptions.Builder googleGenAiChatOptions;
     private final IntentRouteDispatcher intentRouteDispatcher;
 
     private final ChatClient chatClient;
     public IntentClassificationAgent(@Qualifier("geminiJsonChatClientBuilder") ChatClient.Builder chatClient,
                                      ObjectMapper objectMapper,
-                                     IntentRouteDispatcher intentRouteDispatcher) {
-        this.chatClient = chatClient.defaultSystem(SYSTEM_PROMPT).build();
+                                     IntentRouteDispatcher intentRouteDispatcher,
+                                     ChatMemory chatMemory) {
+        this.chatClient = chatClient
+                .defaultSystem(SYSTEM_PROMPT)
+                .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+                .build();
         this.objectMapper = objectMapper;
         this.googleGenAiChatOptions = buildJsonOptions();
         this.intentRouteDispatcher = intentRouteDispatcher;
@@ -59,6 +65,8 @@ public class IntentClassificationAgent {
             String userMessage = event.update().getMessage().getText();
             String json = chatClient.prompt()
                     .user(userMessage)
+                    // conversationId = chatId: 채팅방 단위로 대화 이력이 분리됨(유저 단위가 아님에 주의)
+                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, event.chatId()))
                     .options(googleGenAiChatOptions)
                     .call()
                     .content();
@@ -70,7 +78,7 @@ public class IntentClassificationAgent {
         intentRouteDispatcher.dispatch(intentType, event, userId);
     }
 
-    private GoogleGenAiChatOptions buildJsonOptions(){
+    private GoogleGenAiChatOptions.Builder buildJsonOptions(){
         String schemaJson = """
             {
               "type": "OBJECT",
@@ -83,7 +91,6 @@ public class IntentClassificationAgent {
         return GoogleGenAiChatOptions.builder()
                 .model("gemini-flash-latest")
                 .responseMimeType("application/json")
-                .responseSchema(schemaJson)
-                .build();
+                .responseSchema(schemaJson);
     }
 }

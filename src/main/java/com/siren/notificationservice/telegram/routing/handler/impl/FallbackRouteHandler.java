@@ -1,8 +1,8 @@
-package com.siren.notificationservice.telegram.routing.handle.impl;
+package com.siren.notificationservice.telegram.routing.handler.impl;
 
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.routing.IntentType;
-import com.siren.notificationservice.telegram.routing.handle.IntentRouteHandler;
+import com.siren.notificationservice.telegram.routing.handler.IntentRouteHandler;
 import com.siren.notificationservice.telegram.service.TelegramMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

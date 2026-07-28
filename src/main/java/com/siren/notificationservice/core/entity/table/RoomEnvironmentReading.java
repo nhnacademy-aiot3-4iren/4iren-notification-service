@@ -41,6 +41,7 @@ public class RoomEnvironmentReading {
     @JoinColumn(name = "snapshot_id")
     private RoomEnvironmentSnapshot snapshot;
 
+
     @Column(name = "value", nullable = false, precision = 10, scale = 3)
     private BigDecimal value;
 }

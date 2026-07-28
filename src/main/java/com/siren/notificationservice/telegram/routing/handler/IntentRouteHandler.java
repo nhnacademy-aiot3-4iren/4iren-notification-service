@@ -1,4 +1,4 @@
-package com.siren.notificationservice.telegram.routing.handle;
+package com.siren.notificationservice.telegram.routing.handler;
 
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.routing.IntentType;

@@ -26,6 +26,7 @@ public class MemberBotWebhookController {
     @Value("${rabbitmq.routing-key.telegram-inbound}")
     private String routingKey;
 
+
     @Operation(
             summary = "Member 봇 웹훅 수신",
             description = "Telegram 서버가 Member 봇으로 온 업데이트를 전달하는 콜백. "
