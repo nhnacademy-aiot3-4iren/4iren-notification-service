@@ -14,6 +14,7 @@ public class RecommendationApiFallback implements RecommendationApiClient {
                 null,
                 recommendationRequest.message(),
                 "AI가 지금 바빠요 잠시후에 시도해주세요",
+                null,
                 recommendationRequest.requestedAt(),
                 null,
                 null

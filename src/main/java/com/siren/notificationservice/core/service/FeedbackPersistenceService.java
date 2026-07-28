@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.regex.Pattern;
 
 /**
@@ -94,7 +95,7 @@ public class FeedbackPersistenceService {
 
     // Core가 넘겨주는 기상청 원본 형식(예: "33.7℃", "69%")에서 단위를 떼고 숫자만 남긴다.
     // 특정 단위 기호("℃") 하나만 잘라내는 방식은 인코딩에 따라 깨질 수 있어서,
-    // 숫자/소수점/마이너스만 남기고 나머지는 전부 제거하는 쪽이 더 견고하다.
+    // 숫자/소수점/마이너스만 남기고 나머지는 전부 제거하는 쪽으로
     private static final Pattern NON_NUMERIC = Pattern.compile("[^0-9.\\-]");
     private static final DateTimeFormatter BASE_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final ZoneId WEATHER_ZONE = ZoneId.of("Asia/Seoul"); // Core 응답에 타임존이 없어 고정 — 다지역 확장 시 가장 먼저 깨질 지점
@@ -105,10 +106,19 @@ public class FeedbackPersistenceService {
      * 재사용한다(이 배포가 서비스하는 위치는 하나뿐이라 강의실 구분이 필요 없음).
      */
     private OutsideWeatherSnapshot findOrCreateWeatherSnapshot(RoomEnvironmentReadingResponse.OutsideWeather weather) {
-        ZonedDateTime windowStart = LocalDateTime.parse(weather.baseDateTime(), BASE_DATE_TIME_FORMAT).atZone(WEATHER_ZONE);
+        ZonedDateTime windowStart;
+        try {
+            windowStart = LocalDateTime.parse(weather.baseDateTime(), BASE_DATE_TIME_FORMAT).atZone(WEATHER_ZONE);
+        } catch (DateTimeParseException e) {
+            // baseDateTime 형식이 예상과 다르면 이 피드백의 날씨 스냅샷만 포기한다.
+            log.warn("[FeedbackPersistenceService] baseDateTime 파싱 실패, 외부 날씨 스냅샷 생략 (baseDateTime={})", weather.baseDateTime(), e);
+            return null;
+        }
+
+        ZonedDateTime finalWindowStart = windowStart;
         return outsideWeatherSnapshotRepository.findByWindowStart(windowStart)
                 .orElseGet(() -> outsideWeatherSnapshotRepository.save(OutsideWeatherSnapshot.builder()
-                        .windowStart(windowStart)
+                        .windowStart(finalWindowStart)
                         .outsideTemperature(parseNumeric(weather.temperature()))
                         .outsideHumidity(parseNumeric(weather.humidity()))
                         .build()));
@@ -119,7 +129,17 @@ public class FeedbackPersistenceService {
             return null;
         }
         String numericPart = NON_NUMERIC.matcher(rawValue).replaceAll("");
-        return numericPart.isEmpty() ? null : new BigDecimal(numericPart);
+        if (numericPart.isEmpty()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(numericPart);
+        } catch (NumberFormatException e) {
+            // Core가 "-"처럼 단위만 떼면 숫자가 안 되는 결측치 표기를 보낼 수 있음 - 값 하나 생략,
+            // 피드백 전체를 실패시키지 않음.
+            log.warn("[FeedbackPersistenceService] 숫자 파싱 실패, 값 생략 (rawValue={})", rawValue, e);
+            return null;
+        }
     }
 
 
