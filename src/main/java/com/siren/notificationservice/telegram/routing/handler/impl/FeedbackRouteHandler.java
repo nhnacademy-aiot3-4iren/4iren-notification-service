@@ -131,7 +131,9 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
     }
 
 
-    private void askWhichRoom(TelegramInboundEvent event, Long userId, String rawText, List<UserRoomSubResponse.RoomSubResponse> rooms, FeedbackExtractionResult feedbackExtractionResult) {
+    private void askWhichRoom(TelegramInboundEvent event, Long userId, String rawText,
+                              List<UserRoomSubResponse.RoomSubResponse> rooms,
+                              FeedbackExtractionResult feedbackExtractionResult) {
         List<FeedbackExtractionCache.RoomCandidate> candidates = rooms.stream()
                 .map(r -> new FeedbackExtractionCache.RoomCandidate(r.roomId(), r.roomName()))
                 .toList();

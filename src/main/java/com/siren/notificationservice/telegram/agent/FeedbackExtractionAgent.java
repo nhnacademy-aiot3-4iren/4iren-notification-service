@@ -56,6 +56,11 @@ public class FeedbackExtractionAgent {
         - "그냥 좀 졸리네요" -> sensorScores: [], isDelayed: false, experiencedHour: null, experiencedMeridiem: null, experiencedMinute: null, mentionedRoomName: null
         """;
 
+    // SensorType enum 자체는 호출마다 바뀌지 않으므로 클래스 로드 시 한 번만 계산해둔다.
+    private static final String SENSOR_ENUM_VALUES = Arrays.stream(SensorType.values())
+            .map(t -> "\"" + t.name() + "\"")
+            .collect(Collectors.joining(", "));
+
     // %s 위치 인자 대신 이름 있는 변수를 써서, 나중에 텍스트 순서를 바꾸다가
     // 인자 순서가 어긋나 엉뚱한 값이 들어가는 실수를 방지한다.
     private static final PromptTemplate USER_MESSAGE_TEMPLATE = new PromptTemplate("""
@@ -106,10 +111,6 @@ public class FeedbackExtractionAgent {
     }
 
     private GoogleGenAiChatOptions.Builder buildJsonOptions(List<String> subscribedRoomNames) {
-        String sensorEnumValues = Arrays.stream(SensorType.values())
-                .map(t -> "\"" + t.name() + "\"")
-                .collect(Collectors.joining(", "));
-
         String roomEnumValues = subscribedRoomNames.stream()
                 .map(this::toJsonStringLiteral)
                 .collect(Collectors.joining(", "));
@@ -137,7 +138,7 @@ public class FeedbackExtractionAgent {
               },
               "required": ["sensorScores", "isDelayed"]
             }
-            """.formatted(sensorEnumValues, roomEnumValues);
+            """.formatted(SENSOR_ENUM_VALUES, roomEnumValues);
 
         return GoogleGenAiChatOptions.builder()
                 .model("gemini-flash-latest")

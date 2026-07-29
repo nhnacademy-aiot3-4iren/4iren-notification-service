@@ -26,6 +26,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -79,18 +81,15 @@ public class FeedbackPersistenceService {
         );
 
         // sensorScores는 이미 FeedbackExtractionAgent가 "언급된 축만" 뽑아둔 결과라
-        // 여기선 그대로 각각 한 row씩 저장하기만 하면 된다.
-        event.sensorScores().forEach(s -> {
-            FeedbackScoreId id = FeedbackScoreId.builder()
-                    .sensorType(s.sensorType())
-                    .build(); // feedbackLogId는 @MapsId("feedbackLogId")가 feedbackLog 연관관계에서 채워줌
-
-            feedbackScoreRepository.save(FeedbackScore.builder()
-                    .id(id)
-                    .feedbackLog(feedbackLog)
-                    .score(s.score())
-                    .build());
-        });
+        // 여기선 그대로 각각 한 row로 매핑해서 한 번에 저장하기만 하면 된다.
+        List<FeedbackScore> feedbackScores = event.sensorScores().stream()
+                .map(s -> FeedbackScore.builder()
+                        .id(FeedbackScoreId.builder().sensorType(s.sensorType()).build()) // feedbackLogId는 @MapsId("feedbackLogId")가 feedbackLog 연관관계에서 채워줌
+                        .feedbackLog(feedbackLog)
+                        .score(s.score())
+                        .build())
+                .toList();
+        feedbackScoreRepository.saveAll(feedbackScores);
     }
 
     // Core가 넘겨주는 기상청 원본 형식(예: "33.7℃", "69%")에서 단위를 떼고 숫자만 남긴다.
@@ -164,26 +163,29 @@ public class FeedbackPersistenceService {
                         .build()
         );
 
-        readings.readings().forEach(reading -> {
-            try{
-                EnvironmentMetricType metricType = EnvironmentMetricType.valueOf(reading.metricType());
+        List<RoomEnvironmentReading> validReadings = readings.readings().stream()
+                .map(reading -> {
+                    try {
+                        EnvironmentMetricType metricType = EnvironmentMetricType.valueOf(reading.metricType());
 
-                // snapshotId는 @MapsId("snapshotId")가 snapshot 연관관계에서 값을 가져와 채워줌!
-                RoomEnvironmentReadingId id = RoomEnvironmentReadingId.builder()
-                        .metricType(metricType)
-                        .build();
+                        // snapshotId는 @MapsId("snapshotId")가 snapshot 연관관계에서 값을 가져와 채워줌!
+                        RoomEnvironmentReadingId id = RoomEnvironmentReadingId.builder()
+                                .metricType(metricType)
+                                .build();
 
-                roomEnvironmentReadingRepository.save(
-                        RoomEnvironmentReading.builder()
+                        return RoomEnvironmentReading.builder()
                                 .id(id)
                                 .snapshot(snapshot)
                                 .value(BigDecimal.valueOf(reading.value())) // DTO는 Double, 엔티티 컬럼은 DECIMAL
-                                .build()
-                );
-            }catch (IllegalArgumentException e){
-                log.warn("[FeedbackPersistenceService] 알 수 없는 metricType, 이 reading 건너뜀 (roomId={}, metricType={})", roomId, reading.metricType(), e);
-            }
-        });
+                                .build();
+                    } catch (IllegalArgumentException e) {
+                        log.warn("[FeedbackPersistenceService] 알 수 없는 metricType, 이 reading 건너뜀 (roomId={}, metricType={})", roomId, reading.metricType(), e);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .toList();
+        roomEnvironmentReadingRepository.saveAll(validReadings);
         return snapshot;
     }
 
