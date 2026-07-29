@@ -1,9 +1,13 @@
 package com.siren.notificationservice.telegram.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
+import org.telegram.telegrambots.meta.api.objects.MaybeInaccessibleMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
+import tools.jackson.databind.module.SimpleModule;
 
 @Configuration
 @EnableConfigurationProperties(TelegramBotProperties.class)
@@ -29,5 +33,17 @@ public class TelegramClientConfig {
     @Bean
     public TelegramSender memberTelegramSender(TelegramBotProperties properties) {
         return new TelegramSender(new DefaultBotOptions(), properties.memberBot().token());
+    }
+
+    /**
+     * CallbackQuery.getMessage()의 타입(MaybeInaccessibleMessage)이 인터페이스라, Jackson이
+     * 기본으로는 어떤 구현체로 만들지 못 정한다(telegrambots 라이브러리에 폴리모피즘 힌트가
+     * 전혀 없음 - 실제 바이트코드로 확인함). 이게 없으면 인라인 키보드 콜백 웹훅(/webhook/*)이
+     * JSON 역직렬화 단계에서 500으로 죽는다. Message로 매핑해서 해결한다.
+     */
+    @Bean
+    public JsonMapperBuilderCustomizer telegramCallbackJacksonCustomizer() {
+        return builder -> builder.addModule(new SimpleModule()
+                .addAbstractTypeMapping(MaybeInaccessibleMessage.class, Message.class));
     }
 }
