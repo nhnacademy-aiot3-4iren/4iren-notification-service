@@ -7,6 +7,7 @@ import com.siren.notificationservice.core.dto.response.RecommendationResponse;
 import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
 import com.siren.notificationservice.core.service.LastMentionedRoomService;
+import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.routing.IntentType;
 import com.siren.notificationservice.telegram.routing.handler.IntentRouteHandler;
@@ -30,6 +31,7 @@ public class QuestionRouteHandler implements IntentRouteHandler {
     public IntentType supports() {
         return IntentType.QUESTION;
     }
+
 
     @Override
     public void handle(TelegramInboundEvent event, Long userId) {
@@ -60,7 +62,13 @@ public class QuestionRouteHandler implements IntentRouteHandler {
         if(response.roomId()!= null){
             lastMentionedRoomService.save(userId, response.roomId());
         }
-        // 결과값을 유저에게 메시지 보냄
-        telegramMessageService.sendMessage(event.chatId(), event.botType(), response.answer(), "[Recommendation API] - LLM 답변");
+
+        if(response.options()!=null && !response.options().isEmpty()) {
+            telegramMessageService.sendInlineKeyboardMessage(event.chatId(), event.botType(), response.answer(), CallbackActionType.QUESTION_CONTINUE, response.options());
+        }else{
+            telegramMessageService.sendMessage(event.chatId(), event.botType(),response.answer(),"[Recommendation API] - LLM 답변");
+        }
+
+
     }
 }
