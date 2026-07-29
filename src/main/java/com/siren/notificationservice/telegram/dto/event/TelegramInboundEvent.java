@@ -47,9 +47,13 @@ public record TelegramInboundEvent(
     }
 
     /**
-     * @return 유저가 메시지 보낸 시간
+     * @return 유저가 메시지 보낸 시간. 콜백(버튼 탭)은 텔레그램이 자체 타임스탬프를 안 줘서
+     * (callback_query에 date 필드 없음) 서버 수신 시각으로 대체한다.
      */
     public LocalDateTime requestAt(){
+        if(update.hasCallbackQuery()){
+            return LocalDateTime.now();
+        }
         return LocalDateTime.ofEpochSecond(update.getMessage().getDate(), 0, ZoneOffset.ofHours(9));
     }
 }
