@@ -68,7 +68,5 @@ public class QuestionRouteHandler implements IntentRouteHandler {
         }else{
             telegramMessageService.sendMessage(event.chatId(), event.botType(),response.answer(),"[Recommendation API] - LLM 답변");
         }
-
-
     }
 }

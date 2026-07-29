@@ -143,18 +143,7 @@ public class TelegramMessageService {
      * @param context 로그 구분용 라벨 (예: "링크 만료 안내", "연동 성공 안내")
      */
     public void sendMessage(String chatId, BotType botType, String text, String context) {
-        SendMessage message = new SendMessage(chatId, text);
-        try {
-            resolveTelegramSender(botType).execute(message);
-        } catch (TelegramApiRequestException e) {
-            if (Integer.valueOf(403).equals(e.getErrorCode())) {
-                log.info("{} 발송 불가 - 봇 차단 상태 (botType={}, chatId={})", context, botType, chatId);
-            } else {
-                log.warn("{} 발송 실패 (botType={}, chatId={}, errorCode={})", context, botType, chatId, e.getErrorCode(), e);
-            }
-        } catch (TelegramApiException e) {
-            log.warn("{} 발송 실패 (botType={}, chatId={})", context, botType, chatId, e);
-        }
+        executeSendMessage(botType, new SendMessage(chatId, text), chatId, context);
     }
 
     /**
@@ -178,16 +167,24 @@ public class TelegramMessageService {
                 .replyMarkup(InlineKeyboardMarkup.builder().keyboard(keyboard).build())
                 .build();
 
+        executeSendMessage(botType, message, chatId, "인라인 키보드");
+    }
+
+    /**
+     * {sendMessage}/{sendInlineKeyboardMessage}가 공유하는 발송 실행부.
+     * 발송 실패는 예외를 삼키고 로그만 남긴다 (재시도 없음).
+     */
+    private void executeSendMessage(BotType botType, SendMessage message, String chatId, String context) {
         try {
             resolveTelegramSender(botType).execute(message);
         } catch (TelegramApiRequestException e) {
             if (Integer.valueOf(403).equals(e.getErrorCode())) {
-                log.info("인라인 키보드 발송 불가 - 봇 차단 상태 (botType={}, chatId={})", botType, chatId);
+                log.info("{} 발송 불가 - 봇 차단 상태 (botType={}, chatId={})", context, botType, chatId);
             } else {
-                log.warn("인라인 키보드 발송 실패 (botType={}, chatId={}, errorCode={})", botType, chatId, e.getErrorCode(), e);
+                log.warn("{} 발송 실패 (botType={}, chatId={}, errorCode={})", context, botType, chatId, e.getErrorCode(), e);
             }
         } catch (TelegramApiException e) {
-            log.warn("인라인 키보드 발송 실패 (botType={}, chatId={})", botType, chatId, e);
+            log.warn("{} 발송 실패 (botType={}, chatId={})", context, botType, chatId, e);
         }
     }
 

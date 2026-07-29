@@ -18,8 +18,8 @@ public interface CoreApiClient {
      * @param userId 대상 유저 id
      * @return 유저 id와 구독 중인 강의실별 정보(roomId, notificationEnabled) 목록
      */
-    @GetMapping("/api/rooms/subscriptions")
-    UserRoomSubResponse getRoomSubscriptions(@RequestParam("userId") Long userId);
+    @GetMapping("/internal/users/{user-id}/room-subscriptions")
+    UserRoomSubResponse getRoomSubscriptions(@PathVariable("user-id") Long userId);
 
     /**
      * 해당 강의실에 대한 환경 값 스냡샷을 남긴다.

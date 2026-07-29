@@ -39,7 +39,7 @@ public class ChatClientConfig {
             @Qualifier("googleGenAiChatModel") ChatModel geminiChatModel) {
 
         GoogleGenAiChatOptions.Builder liteOptions = GoogleGenAiChatOptions.builder()
-                .model("gemini-flash-latest");
+                .model("gemini-3.1-flash-lite");
 
         return ChatClient.builder(geminiChatModel)
                 .defaultOptions(liteOptions)

@@ -33,6 +33,7 @@ public class TelegramInboundListener {
     private final IntentClassificationAgent intentClassificationAgent;
     private final TelegramMessageService telegramMessageService;
     private final CallbackRouteDispatcher callbackRouteDispatcher;
+
     /**
      * 큐에 쌓인 텔레그램 업데이트를 update 종류별로 분기 처리한다.
      *
@@ -49,9 +50,9 @@ public class TelegramInboundListener {
             telegramSubscriptionService.handleBlockedBot(event);
         } else if (update.hasMessage() && update.getMessage().hasText()) {
             handleIntentFreeText(event);
-        }else if(update.hasMessage()) {
+        } else if (update.hasMessage()) {
             handleUnsupportedContent(event);
-        }else if(update.hasCallbackQuery()){
+        } else if (update.hasCallbackQuery()) {
             handleCallbackQuery(event);
         }
     }
@@ -63,7 +64,7 @@ public class TelegramInboundListener {
      * 만료/이미 소비된 경우엔 재시도해도 절대 성공할 수 없으므로 예외 없이 조용히 무시한다
      * — 그냥 던지면 DLQ가 없어서 무한 재큐잉된다. 사용자는 프론트에서 토큰을 다시 발급받아야 한다.
      *
-     * @param event  원본 이벤트 (botType 확인용)
+     * @param event 원본 이벤트 (botType 확인용)
      */
     private void handleStartCommand(TelegramInboundEvent event) {
         Update update = event.update();
@@ -76,53 +77,33 @@ public class TelegramInboundListener {
         Optional<Long> userId = telegramLinkTokenService.consumeToken(token, event.botType());
         if (userId.isEmpty()) {
             log.info("만료되었거나 이미 사용된 딥링크 토큰 수신 (botType={}), 사용자에게 안내", event.botType());
-            handleExpiredToken(event);
+            telegramMessageService.sendTokenExpiredMessage(event.chatId(), event.botType());
             return;
         }
 
         telegramSubscriptionService.handleValidStart(event, userId.get()); //연동 로직체크
-        handleSuccessLink(event); // 연동 성공 메세지
-    }
-
-    /**
-     * 만료됐거나 이미 소비된 토큰으로 "/start"가 왔을 때, 다시 토큰을 발급받으라고 안내한다.
-     *
-     * @param event  원본 이벤트 (botType 확인용)
-     */
-    private void handleExpiredToken(TelegramInboundEvent event) {
-        telegramMessageService.sendTokenExpiredMessage(event.chatId(), event.botType());
-    }
-
-    /**
-     * 연동이 성공적으로 끝났음을 사용자에게 텔레그램 챗으로 알려준다.
-     *
-     * @param event  원본 이벤트 (botType 확인용)
-     */
-    private void handleSuccessLink(TelegramInboundEvent event){
-        telegramMessageService.sendLinkSuccessMessage(event.chatId(), event.botType());
+        telegramMessageService.sendLinkSuccessMessage(event.chatId(), event.botType());// 연동 성공 메세지
     }
 
     /**
      * 자유 텍스트에 대해서 LLM이 의도 분류를 하고 의도에 따른 로직을 실행합니다.
+     *
      * @param event
      */
     private void handleIntentFreeText(TelegramInboundEvent event) {
         String chatId = event.chatId();
-        Long userId;
-        try {
-            userId = telegramLinkTokenService.getUserIdByChatId(chatId, event.botType()); // 해당 chatId의 userId를 찾음 (연동 여부체크)
-        } catch (TelegramSubscriptionNotFoundException e) {
-            telegramMessageService.sendNotLinkedGuideMessage(chatId, event.botType()); // 예외 시 연동해달라고 메시지보냄
+        Optional<Long> userId = resolveLinkedUserId(chatId, event.botType());
+        if (userId.isEmpty()) {
             return;
         }
 
-        if(event.botType() == BotType.ADMIN_BOT){ // admin bot일 시 자유텍스트를 지원하지않음
-            String deepLinkUrl = telegramLinkTokenService.getRedirectUrl(userId, BotType.USER_BOT);
+        if (event.botType() == BotType.ADMIN_BOT) { // admin bot일 시 자유텍스트를 지원하지않음
+            String deepLinkUrl = telegramLinkTokenService.getRedirectUrl(userId.get(), BotType.USER_BOT);
             telegramMessageService.sendRedirectToUserBotMessage(chatId, deepLinkUrl);
             return;
         }
 
-        intentClassificationAgent.classify(event, userId);
+        intentClassificationAgent.classify(event, userId.get());
     }
 
     private void handleCallbackQuery(TelegramInboundEvent event) {
@@ -130,22 +111,32 @@ public class TelegramInboundListener {
         telegramMessageService.answerCallback(callbackQuery.getId(), event.botType());
 
         String chatId = event.chatId();
-        Long userId;
-        try{
-            userId = telegramLinkTokenService.getUserIdByChatId(chatId, event.botType());
-        }catch (TelegramSubscriptionNotFoundException e) {
-            telegramMessageService.sendNotLinkedGuideMessage(chatId, event.botType());
+        Optional<Long> userId = resolveLinkedUserId(chatId, event.botType());
+        if (userId.isEmpty()) {
             return;
         }
 
         Optional<CallbackActionType> actionType = event.callbackActionType();
-
         if (actionType.isEmpty()) {
             log.warn("알 수 없는 콜백 형식 (chatId={}, data={})", chatId, callbackQuery.getData());
             return;
         }
 
-        callbackRouteDispatcher.dispatch(actionType.get(), event, userId);
+        callbackRouteDispatcher.dispatch(actionType.get(), event, userId.get());
+    }
+
+    /**
+     * chatId로 연동된 userId를 조회한다. 자유 텍스트/콜백 두 진입점이 공유하는 조회부 —
+     * 연동 안 된 경우 안내 메시지를 보내고 빈 Optional을 반환해서, 두 곳 다 여기서
+     * TelegramSubscriptionNotFoundException을 흡수한다 (DLQ 없는 구조라 리스너 밖으로 새면 무한 재큐잉).
+     */
+    private Optional<Long> resolveLinkedUserId(String chatId, BotType botType) {
+        try {
+            return Optional.of(telegramLinkTokenService.getUserIdByChatId(chatId, botType));
+        } catch (TelegramSubscriptionNotFoundException e) {
+            telegramMessageService.sendNotLinkedGuideMessage(chatId, botType);
+            return Optional.empty();
+        }
     }
 
     private void handleUnsupportedContent(TelegramInboundEvent event) {
