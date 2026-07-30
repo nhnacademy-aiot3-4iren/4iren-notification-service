@@ -1,7 +1,6 @@
 package com.siren.notificationservice.telegram.controller;
 
-import com.siren.notificationservice.core.entity.BotType;
-import com.siren.notificationservice.telegram.config.TelegramBotProperties;
+import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.telegram.dto.response.LinkStatusResponse;
 import com.siren.notificationservice.telegram.dto.response.LinkTokenResponse;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
@@ -20,10 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Tag(name = "딥링크 제공 API",description = "역할별로 차별화된 딥링크 Rest API 제공")
 public class DeepLinkController {
-    private final TelegramBotProperties telegramBotProperties;
     private final TelegramLinkTokenService telegramLinkTokenService;
-    private static final String DEEP_LINK_BASE_URL="https://t.me/";
-    private static final String DEEP_LINK_START_PARAM ="?start=";
+
 
     /**
      * AdminBot에 연결하기 위한 DeepLink 제공
@@ -40,8 +37,7 @@ public class DeepLinkController {
     public ResponseEntity<LinkTokenResponse> linkAdminToken(
             @Parameter(description = "Gateway가 JWT 검증 후 전달하는 유저 id", required = true)
             @RequestHeader("X-USER-ID") Long userId) {
-        String uuid = telegramLinkTokenService.issueToken(userId, BotType.ADMIN_BOT);
-        String deepLinkUrl = DEEP_LINK_BASE_URL+telegramBotProperties.adminBot().username()+ DEEP_LINK_START_PARAM +uuid;
+        String deepLinkUrl = telegramLinkTokenService.getDeepLinkUrl(userId,  BotType.ADMIN_BOT);
         return ResponseEntity.ok().body(new LinkTokenResponse(deepLinkUrl, TelegramLinkTokenService.LINK_TOKEN_TTL.toSeconds()));
     }
 
@@ -58,8 +54,7 @@ public class DeepLinkController {
     public ResponseEntity<LinkTokenResponse> linkMemberToken(
             @Parameter(description = "Gateway가 JWT 검증 후 전달하는 유저 id", required = true)
             @RequestHeader("X-USER-ID") Long userId) {
-        String uuid = telegramLinkTokenService.issueToken(userId, BotType.USER_BOT);
-        String deepLinkUrl = DEEP_LINK_BASE_URL+telegramBotProperties.memberBot().username()+ DEEP_LINK_START_PARAM +uuid;
+        String deepLinkUrl = telegramLinkTokenService.getDeepLinkUrl(userId,  BotType.USER_BOT);
         return ResponseEntity.ok().body(new LinkTokenResponse(deepLinkUrl, TelegramLinkTokenService.LINK_TOKEN_TTL.toSeconds()));
     }
 
