@@ -4,7 +4,7 @@ import com.siren.notificationservice.core.client.CoreApiClient;
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
 import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
-import com.siren.notificationservice.core.service.FeedbackExtractionCacheService;
+import com.siren.notificationservice.core.service.cache.FeedbackExtractionCacheService;
 import com.siren.notificationservice.core.service.FeedbackRoomResolver;
 import com.siren.notificationservice.telegram.agent.FeedbackExtractionAgent;
 import com.siren.notificationservice.telegram.dto.event.FeedbackProcessingEvent;

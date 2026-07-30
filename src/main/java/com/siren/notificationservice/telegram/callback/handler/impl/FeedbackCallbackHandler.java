@@ -1,7 +1,7 @@
 package com.siren.notificationservice.telegram.callback.handler.impl;
 
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
-import com.siren.notificationservice.core.service.FeedbackExtractionCacheService;
+import com.siren.notificationservice.core.service.cache.FeedbackExtractionCacheService;
 import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.callback.handler.CallbackRouteHandler;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;

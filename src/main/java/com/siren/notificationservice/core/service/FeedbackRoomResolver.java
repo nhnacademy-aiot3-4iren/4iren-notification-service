@@ -2,6 +2,7 @@ package com.siren.notificationservice.core.service;
 
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
 import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
+import com.siren.notificationservice.core.service.cache.LastMentionedRoomService;
 import com.siren.notificationservice.telegram.agent.FeedbackExtractionAgent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
