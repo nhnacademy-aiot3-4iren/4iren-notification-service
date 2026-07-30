@@ -1,5 +1,6 @@
 package com.siren.notificationservice.core.service;
 
+import com.siren.notificationservice.core.dto.response.OutsideWeather;
 import com.siren.notificationservice.core.dto.response.RoomEnvironmentReadingResponse;
 import com.siren.notificationservice.core.entity.domain.EnvironmentMetricType;
 import com.siren.notificationservice.core.entity.domain.FeedbackScoreId;
@@ -47,16 +48,18 @@ public class FeedbackPersistenceService {
     private final FeedbackScoreRepository feedbackScoreRepository;
 
     /**
-     * readings가 null이면(Core API 실패) 스냅샷 없이 저장한다 — feedback_log의 snapshot/
-     * outsideWeatherSnapshot은 그래서 둘 다 nullable이다. "환경 정보가 없다"와 "피드백
-     * 자체가 없다"는 서로 다른 문제라 하나가 실패했다고 다른 하나까지 실패시키면 안 된다.
+     * readings/outsideWeather는 각각 독립적으로 null일 수 있다(Core API 호출 실패) — 둘 다
+     * 그 경우 스냅샷 없이 저장한다. feedback_log의 snapshot/outsideWeatherSnapshot도 그래서
+     * 둘 다 nullable이다. "환경 정보가 없다"와 "피드백 자체가 없다"는 서로 다른 문제라
+     * 하나가 실패했다고 다른 하나까지, 혹은 피드백 저장 자체를 실패시키면 안 된다.
      *
-     * @param event       원본 피드백 처리 이벤트
-     * @param referenceAt 환경 스냅샷 매칭 기준 시각 (experiencedAt ?? receivedAt)
-     * @param readings    Core API 조회 결과 (실내 실측값 + 외부 날씨), 실패 시 null
+     * @param event         원본 피드백 처리 이벤트
+     * @param referenceAt   환경 스냅샷 매칭 기준 시각 (experiencedAt ?? receivedAt)
+     * @param outsideWeather Core API 외부 날씨 조회 결과, 실패 시 null
+     * @param readings      Core API 강의실 실측값 조회 결과, 실패 시 null
      */
     @Transactional
-    public void persist(FeedbackProcessingEvent event, ZonedDateTime referenceAt,
+    public void persist(FeedbackProcessingEvent event, ZonedDateTime referenceAt, OutsideWeather outsideWeather,
                         RoomEnvironmentReadingResponse readings) {
         // 강의실 환경 조회 or 생성
         RoomEnvironmentSnapshot roomEnvironmentSnapshot = readings != null
@@ -64,8 +67,8 @@ public class FeedbackPersistenceService {
                 : null;
 
         // 외부 날씨 스냅샷
-        OutsideWeatherSnapshot outsideWeatherSnapshot = (readings != null && readings.outsideWeather() != null)
-                ? findOrCreateWeatherSnapshot(readings.outsideWeather())
+        OutsideWeatherSnapshot outsideWeatherSnapshot = (outsideWeather != null)
+                ? findOrCreateWeatherSnapshot(outsideWeather)
                 : null;
 
         FeedbackLog feedbackLog = feedbackLogRepository.save(FeedbackLog.builder()
@@ -104,7 +107,7 @@ public class FeedbackPersistenceService {
      * 외부 날씨 스냅샷은 한 번만 만든다 — room_id 없이 window_start 유니크 제약만으로
      * 재사용한다(이 배포가 서비스하는 위치는 하나뿐이라 강의실 구분이 필요 없음).
      */
-    private OutsideWeatherSnapshot findOrCreateWeatherSnapshot(RoomEnvironmentReadingResponse.OutsideWeather weather) {
+    private OutsideWeatherSnapshot findOrCreateWeatherSnapshot(OutsideWeather weather) {
         ZonedDateTime windowStart;
         try {
             windowStart = LocalDateTime.parse(weather.baseDateTime(), BASE_DATE_TIME_FORMAT).atZone(WEATHER_ZONE);

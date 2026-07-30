@@ -66,7 +66,7 @@ public class IntentClassificationAgent {
             String json = chatClient.prompt()
                     .user(userMessage)
                     // conversationId = chatId: 채팅방 단위로 대화 이력이 분리됨(유저 단위가 아님에 주의)
-                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, event.chatId()))
+                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, event.botType()+":"+event.chatId()))
                     .options(googleGenAiChatOptions)
                     .call()
                     .content();

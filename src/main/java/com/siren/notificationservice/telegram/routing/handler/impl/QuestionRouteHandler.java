@@ -6,7 +6,7 @@ import com.siren.notificationservice.core.dto.request.RecommendationRequest;
 import com.siren.notificationservice.core.dto.response.RecommendationResponse;
 import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
-import com.siren.notificationservice.core.service.LastMentionedRoomService;
+import com.siren.notificationservice.core.service.cache.LastMentionedRoomService;
 import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.routing.IntentType;
