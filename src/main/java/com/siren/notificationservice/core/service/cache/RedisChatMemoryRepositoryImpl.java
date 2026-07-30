@@ -8,13 +8,15 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Component
 public class RedisChatMemoryRepositoryImpl extends AbstractRedisTtlCache<String,List<StoredMessage>> implements ChatMemoryRepository {
@@ -39,10 +41,16 @@ public class RedisChatMemoryRepositoryImpl extends AbstractRedisTtlCache<String,
     }
 
     // 메서드 단위의 NonNull은 이 메서드는 호출 결과로 절대 null을 반환하지않는 것을 명시적으로 선언하는 마커
+    // KEYS 대신 SCAN을 쓴다 - KEYS는 전체 키 공간을 한 번에 훑어서 그동안 Redis(싱글 스레드)가
+    // 다른 요청을 못 받는데, SCAN은 커서로 조금씩 나눠 훑어서 블로킹하지 않는다.
     @Override
     public @NonNull List<String> findConversationIds() {
-        Set<String> keys = stringRedisTemplate.keys(PREFIX + "*");
-        return keys == null ? List.of() : keys.stream().map(k -> k.substring(PREFIX.length())).toList();
+        List<String> conversationIds = new ArrayList<>();
+        ScanOptions scanOptions = ScanOptions.scanOptions().match(PREFIX + "*").count(100).build();
+        try (Cursor<String> cursor = stringRedisTemplate.scan(scanOptions)) {
+            cursor.forEachRemaining(key -> conversationIds.add(key.substring(PREFIX.length())));
+        }
+        return conversationIds;
     }
 
     @Override
