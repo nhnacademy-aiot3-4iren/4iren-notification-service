@@ -19,7 +19,7 @@ import java.time.ZonedDateTime;
 
 /**
  * 사용자가 텔레그램으로 남긴 강의실 환경 체감 피드백 한 건. 축별 점수는
- * {@link FeedbackScore}(key-value)로, 실내 환경 실측값은 {@link RoomEnvironmentSnapshot}/
+ * {@link FeedbackScore}(key-averageValue)로, 실내 환경 실측값은 {@link RoomEnvironmentSnapshot}/
  * {@link RoomEnvironmentReading}으로, 외부 날씨는 {@link OutsideWeatherSnapshot}으로
  * 분리돼 있다 — 이 엔티티는 원문/제출 메타데이터만 담는다.
  */

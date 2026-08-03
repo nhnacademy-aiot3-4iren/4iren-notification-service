@@ -1,9 +1,6 @@
 package com.siren.notificationservice.core.config;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
 
 import org.springframework.amqp.support.converter.JacksonJavaTypeMapper;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
@@ -49,8 +46,8 @@ public class RabbitMQConfig {
      * @return telegram-events 익스체인지
      */
     @Bean
-    public TopicExchange telegramEventsExchange() {
-        return new TopicExchange(telegramEventsExchangeName);
+    public DirectExchange telegramEventsExchange() {
+        return new DirectExchange(telegramEventsExchangeName);
     }
 
     /**
@@ -88,7 +85,7 @@ public class RabbitMQConfig {
      * @return 큐-익스체인지 바인딩
      */
     @Bean
-    public Binding telegramInboundBinding(Queue telegramInboundQueue, TopicExchange telegramEventsExchange) {
+    public Binding telegramInboundBinding(Queue telegramInboundQueue, DirectExchange telegramEventsExchange) {
         return BindingBuilder.bind(telegramInboundQueue).to(telegramEventsExchange).with(telegramInboundRoutingKey);
     }
 

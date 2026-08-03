@@ -113,7 +113,7 @@ public class TelegramMessageService {
 
     /**
      * 피드백 처리 큐 publish 실패 등, 내부 처리 단계에서 문제가 생겼을 때 안내한다.
-     * Core API 실패({@link #sendCoreApiUnavailableMessage})와 구분되는 별도 원인이라 전용 메서드로 분리.
+     * Core API 실패(sendCoreApiUnavailableMessage)와 구분되는 별도 원인이라 전용 메서드로 분리.
      */
     public void sendFeedbackProcessingFailedMessage(String chatId, BotType botType) {
         String text = "지금은 의견을 접수하기 어려워요, 잠시 후 다시 시도해주세요.";
@@ -121,7 +121,7 @@ public class TelegramMessageService {
     }
 
     /**
-     * 인라인 키보드 탭에 응답한다 — 안 부르면 텔레그램 클라이언트에 로딩 스피너가 계속 돈다.
+     * 인라인 키보드 탭에 응답한다 : 안 부르면 텔레그램 클라이언트에 로딩 스피너가 계속 돈다.
      * 콜백 처리 성공/실패와 무관하게 항상 먼저(또는 처리 직후) 호출해야 한다.
      */
     public void answerCallback(String callbackQueryId, BotType botType) {

@@ -1,48 +1,25 @@
 package com.siren.notificationservice.core.exception;
 
 import com.siren.notificationservice.core.dto.ErrorResponse;
-import com.siren.notificationservice.telegram.service.TelegramMessageService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * REST 컨트롤러(웹훅/딥링크)에서 예상 못 한 예외가 나면 500으로 응답하고 스택트레이스를 로깅한다.
+ * 도메인 예외(MissingChatIdException 등)는 전부 RabbitMQ 리스너 안에서만 던져지고 그 안에서
+ * 잡히기 때문에 여기까지 올라오지 않는다 -> 그래서 타입별로 나눌 핸들러 없이 이거 하나로 충분하다.
+ */
 @Slf4j
 @RestControllerAdvice
-@RequiredArgsConstructor
 public class GlobalExceptionHandler {
-    private final TelegramMessageService telegramMessageService;
 
-    /**
-     * 도메인에서 의도적으로 던진 예외(NotificationServiceException 계열)를 ErrorCode에 매핑된
-     * HTTP 상태/메시지로 변환한다.
-     *
-     * @param e 도메인 예외
-     * @return 에러 코드에 대응하는 상태의 ErrorResponse
-     */
-    @ExceptionHandler(NotificationServiceException.class)
-    public ResponseEntity<ErrorResponse> handleNotificationServiceException(NotificationServiceException e) {
-        log.warn("[{}] {}", e.getErrorCode().getCode(), e.getMessage());
-        return ResponseEntity.status(e.getErrorCode().getStatus())
-                .body(ErrorResponse.of(e.getErrorCode(), e.getMessage()));
-    }
-
-//    @ExceptionHandler(CoreApiUnavailableException.class)
-//    public ResponseEntity<Void> handleCoreApiUnavailableException(CoreApiUnavailableException e) {
-//
-//    }
-
-    /**
-     * 예상하지 못한 나머지 모든 예외에 대한 최종 폴백. 500으로 응답하고 스택트레이스를 로깅한다.
-     *
-     * @param e 처리되지 않은 예외
-     * @return INTERNAL_SERVER_ERROR ErrorResponse
-     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
         log.error("처리되지 않은 예외 발생", e);
         return ResponseEntity.internalServerError()
-                .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR));
+                .body(ErrorResponse.of(HttpStatus.INTERNAL_SERVER_ERROR.value(), "서버 내부 오류가 발생했습니다."));
     }
 }

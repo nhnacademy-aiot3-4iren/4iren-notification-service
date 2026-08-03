@@ -1,6 +1,7 @@
 package com.siren.notificationservice.telegram.messaging.inbound;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.exception.MissingChatIdException;
 import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
 import com.siren.notificationservice.telegram.agent.IntentClassificationAgent;
 import com.siren.notificationservice.telegram.callback.CallbackActionType;
@@ -129,12 +130,17 @@ public class TelegramInboundListener {
      * chatId로 연동된 userId를 조회한다. 자유 텍스트/콜백 두 진입점이 공유하는 조회부 —
      * 연동 안 된 경우 안내 메시지를 보내고 빈 Optional을 반환해서, 두 곳 다 여기서
      * TelegramSubscriptionNotFoundException을 흡수한다 (DLQ 없는 구조라 리스너 밖으로 새면 무한 재큐잉).
+     * MissingChatIdException도 같은 이유로 흡수-> chatId 자체가 없으면 안내 메시지를 보낼
+     * 곳도 없으니 로그만 남기고 넘어간다.
      */
     private Optional<Long> resolveLinkedUserId(String chatId, BotType botType) {
         try {
             return Optional.of(telegramLinkTokenService.getUserIdByChatId(chatId, botType));
         } catch (TelegramSubscriptionNotFoundException e) {
             telegramMessageService.sendNotLinkedGuideMessage(chatId, botType);
+            return Optional.empty();
+        } catch (MissingChatIdException e) {
+            log.warn("chatId 없이 들어온 이벤트, 응답 불가 (botType={})", botType, e);
             return Optional.empty();
         }
     }

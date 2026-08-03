@@ -1,6 +1,7 @@
 package com.siren.notificationservice.core.config;
 
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
+import com.siren.notificationservice.core.dto.RoomWeatherRegion;
 import com.siren.notificationservice.core.dto.StoredMessage;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,6 +40,18 @@ public class RedisCacheConfig {
         feedbackExtractionTemplate.setKeySerializer(new StringRedisSerializer());
         feedbackExtractionTemplate.setValueSerializer(new JacksonJsonRedisSerializer<>(objectMapper, FeedbackExtractionCache.class));
         return feedbackExtractionTemplate;
+    }
+
+    /**
+     * RoomWeatherRegionCacheService 전용 - roomId -> (nx, ny) 캐싱
+     */
+    @Bean
+    public RedisTemplate<String, RoomWeatherRegion> roomWeatherRegionRedisTemplate(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
+        RedisTemplate<String, RoomWeatherRegion> roomWeatherRegionTemplate = new RedisTemplate<>();
+        roomWeatherRegionTemplate.setConnectionFactory(redisConnectionFactory);
+        roomWeatherRegionTemplate.setKeySerializer(new StringRedisSerializer());
+        roomWeatherRegionTemplate.setValueSerializer(new JacksonJsonRedisSerializer<>(objectMapper, RoomWeatherRegion.class));
+        return roomWeatherRegionTemplate;
     }
 
     /**

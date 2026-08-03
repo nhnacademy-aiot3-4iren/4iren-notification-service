@@ -17,7 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * {@link FeedbackLog} 한 건에 딸린 축별 체감 점수 하나(key-value, -2~2). 온도/습도/공기질을
+ * {@link FeedbackLog} 한 건에 딸린 축별 체감 점수 하나(key-averageValue, -2~2). 온도/습도/공기질을
  * 포함해 모든 축을 여기서 동일하게 다룬다 — 새 축이 추가돼도 {@link SensorType} 상수만 늘리면 된다.
  */
 @Entity

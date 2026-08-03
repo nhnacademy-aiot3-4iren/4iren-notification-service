@@ -1,11 +1,13 @@
 package com.siren.notificationservice.core.client;
 
-import com.siren.notificationservice.core.dto.request.RoomSensorsReadingRequest;
 import com.siren.notificationservice.core.dto.response.OutsideWeather;
 import com.siren.notificationservice.core.dto.response.RoomEnvironmentReadingResponse;
 import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
 
@@ -20,14 +22,14 @@ public interface CoreApiClient {
      * @param userId 대상 유저 id
      * @return 유저 id와 구독 중인 강의실별 정보(roomId, notificationEnabled) 목록
      */
-    @GetMapping("/internal/users/{user-id}/room-subscriptions")
+    @GetMapping("/api/core/internal/users/{user-id}/room-subscriptions")
     UserRoomSubResponse getRoomSubscriptions(@PathVariable("user-id") Long userId);
 
     /**
      * 해당 강의실에 대한 환경 값 스냡샷을 남긴다.
      */
-    @PostMapping("/api/environment-readings")
-    RoomEnvironmentReadingResponse getRoomSensorsReadings(@RequestBody RoomSensorsReadingRequest request);
+    @PostMapping("/api/core/internal/rooms/{room-id}/sensor-metrics/summary")
+    RoomEnvironmentReadingResponse getRoomSensorsReadings(@PathVariable("room-id")Long roomId, @RequestParam LocalDateTime requestAt);
 
     /**
      * 해당 강의실에 대한 외부날씨 스냅샷을 남긴다.

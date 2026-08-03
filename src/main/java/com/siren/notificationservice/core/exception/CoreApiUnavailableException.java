@@ -1,8 +1,8 @@
 package com.siren.notificationservice.core.exception;
 
-public class CoreApiUnavailableException extends NotificationServiceException {
+public class CoreApiUnavailableException extends RuntimeException {
 
     public CoreApiUnavailableException(Long id, String message) {
-        super(ErrorCode.CORE_API_UNAVAILABLE, "Core API 응답 실패 ("+message+"=" + id + ")");
+        super("Core API 응답 실패 (" + message + "=" + id + ")");
     }
 }
