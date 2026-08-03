@@ -1,6 +1,6 @@
 -- ERD 리뷰 반영: feedback_log에 섞여있던 관심사를 분리.
--- 1) 축별 체감 점수(temp/humidity/air_quality) -> feedback_score(key-value, 확장 가능)
--- 2) 실내 환경 실측값(15분 평균) -> room_environment_snapshot + room_environment_reading(key-value, 확장 가능)
+-- 1) 축별 체감 점수(temp/humidity/air_quality) -> feedback_score(key-averageValue, 확장 가능)
+-- 2) 실내 환경 실측값(15분 평균) -> room_environment_snapshot + room_environment_reading(key-averageValue, 확장 가능)
 --    같은 강의실의 같은 15분 구간을 여러 피드백이 공유하므로 중복 저장 방지.
 
 CREATE TABLE room_environment_snapshot

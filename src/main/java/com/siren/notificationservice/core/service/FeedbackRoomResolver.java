@@ -3,7 +3,6 @@ package com.siren.notificationservice.core.service;
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
 import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import com.siren.notificationservice.core.service.cache.LastMentionedRoomService;
-import com.siren.notificationservice.telegram.agent.FeedbackExtractionAgent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -46,7 +45,7 @@ public class FeedbackRoomResolver {
     }
 
     /**
-     * {@link FeedbackExtractionAgent}가 판단한 언급 강의실 이름을 roomId로 변환한다.
+     * FeedbackExtractionAgent가 판단한 언급 강의실 이름을 roomId로 변환한다.
      * 스키마 enum이 이미 구독 목록 안에서만 고르도록 제약해뒀으므로 여기서는 단순 조회만 한다.
      */
     private Optional<Long> resolveMentionedRoom(String mentionedRoomName, List<UserRoomSubResponse.RoomSubResponse> rooms){

@@ -4,16 +4,19 @@ import com.siren.notificationservice.core.entity.table.RoomEnvironmentSnapshot;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface RoomEnvironmentSnapshotRepository extends JpaRepository<RoomEnvironmentSnapshot, Long> {
 
     /**
-     * 특정 강의실의 특정 15분 구간 스냅샷을 조회한다 (room_id, window_start 유니크 기준 단건).
-     *
-     * @param roomId      대상 강의실 id
-     * @param windowStart 구간 시작 시각
-     * @return 스냅샷, 없으면 empty
+     * referenceAt을 커버 구간([windowStart-15분, windowStart])에 포함하는 스냅샷을 찾는다.
      */
-    Optional<RoomEnvironmentSnapshot> findByRoomIdAndWindowStart(Long roomId, ZonedDateTime windowStart);
+    Optional<RoomEnvironmentSnapshot> findFirstByRoomIdAndWindowStartBetweenOrderByWindowStartAsc(
+            Long roomId, ZonedDateTime referenceAt, ZonedDateTime referenceAtPlus15);
+
+    /**
+     * 특정 강의실의 스냅샷 전체를 조회한다.
+     */
+    List<RoomEnvironmentSnapshot> findByRoomId(Long roomId);
 }

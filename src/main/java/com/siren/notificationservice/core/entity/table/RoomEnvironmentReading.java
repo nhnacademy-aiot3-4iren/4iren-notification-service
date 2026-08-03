@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 /**
- * {@link RoomEnvironmentSnapshot} 한 건에 딸린 실측값 하나(key-value). 센서가 없는 강의실은
+ * {@link RoomEnvironmentSnapshot} 한 건에 딸린 실측값 하나(key-averageValue). 센서가 없는 강의실은
  * 해당 {@link EnvironmentMetricType}의 row가 그냥 없는 것으로 표현한다 — NULL 값 개념이 필요 없다.
  */
 @Entity
