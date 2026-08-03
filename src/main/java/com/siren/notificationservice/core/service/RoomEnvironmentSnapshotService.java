@@ -49,6 +49,7 @@ public class RoomEnvironmentSnapshotService {
     /**
      * 강의실의 새 스냅샷을 만든다. 같은 referenceAt이 이미 있으면 예외를 던진다.
      */
+    @Transactional(propagation = Propagation.REQUIRED)
     public RoomEnvironmentSnapshot createRoomEnvironmentSnapshot(Long roomId, ZonedDateTime referenceAt) {
         Objects.requireNonNull(roomId, "roomId는 null일 수 없습니다.");
         Objects.requireNonNull(referenceAt, "referenceAt은 null일 수 없습니다.");
