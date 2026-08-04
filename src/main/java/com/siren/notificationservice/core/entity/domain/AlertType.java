@@ -6,5 +6,6 @@ package com.siren.notificationservice.core.entity.domain;
  */
 public enum AlertType {
     VENTILATION_RECOMMEND,
-    SENSOR_ANOMALY
+    SENSOR_ANOMALY,
+    COMFORT_LIMIT_EXCEEDED // 관리자 설정 쾌적/안전 기준 초과(룰 엔진 발행) - 확정 아님, Processing/룰엔진과 네이밍 상의 필요
 }

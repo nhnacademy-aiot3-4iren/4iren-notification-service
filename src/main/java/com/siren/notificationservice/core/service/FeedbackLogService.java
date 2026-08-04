@@ -9,6 +9,7 @@ import com.siren.notificationservice.core.repository.FeedbackLogRepository;
 import com.siren.notificationservice.telegram.dto.feedback.FeedbackExtractionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,5 +84,17 @@ public class FeedbackLogService {
                 .toList();
         feedbackScoreService.saveAll(feedbackScores);
         return feedbackLog;
+    }
+
+    /**
+     * sinceId 이후의 피드백 로그를 id 오름차순으로 최대 limit개 조회한다.
+     */
+    @Transactional(readOnly = true)
+    public List<FeedbackLog> getFeedbackLogs(Long sinceId, int limit) {
+        Objects.requireNonNull(sinceId, "sinceId는 null일 수 없습니다.");
+        if (limit <= 0) {
+            throw new IllegalArgumentException("limit은 1 이상이어야 합니다.");
+        }
+        return feedbackLogRepository.findByFeedbackLogIdGreaterThanOrderByFeedbackLogIdAsc(sinceId, PageRequest.of(0, limit));
     }
 }
