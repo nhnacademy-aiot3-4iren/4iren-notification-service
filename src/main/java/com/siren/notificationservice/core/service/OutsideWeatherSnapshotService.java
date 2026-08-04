@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -27,6 +28,15 @@ public class OutsideWeatherSnapshotService {
     public OutsideWeatherSnapshot getOutsideWeatherSnapshot(Long weatherSnapshotId) {
         Objects.requireNonNull(weatherSnapshotId, "weatherSnapshotId는 null일 수 없습니다.");
         return outsideWeatherSnapshotRepository.findById(weatherSnapshotId).orElse(null);
+    }
+
+    /**
+     * weatherSnapshotId 목록으로 스냅샷 여러 건을 한 번에 조회한다. N+1 방지용 배치 조회.
+     */
+    @Transactional(readOnly = true)
+    public List<OutsideWeatherSnapshot> getByIds(List<Long> weatherSnapshotIds) {
+        Objects.requireNonNull(weatherSnapshotIds, "weatherSnapshotIds는 null일 수 없습니다.");
+        return outsideWeatherSnapshotRepository.findAllById(weatherSnapshotIds);
     }
 
     /**

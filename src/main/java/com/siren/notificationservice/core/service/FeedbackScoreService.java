@@ -28,12 +28,23 @@ public class FeedbackScoreService {
     }
 
     /**
+     * feedbackLogId 목록에 딸린 축별 점수 전체를 한 번에 조회한다. N+1 방지용 배치 조회.
+     */
+    @Transactional(readOnly = true)
+    public List<FeedbackScore> getScoresByFeedbackLogIdIn(List<Long> feedbackLogIds) {
+        Objects.requireNonNull(feedbackLogIds, "feedbackLogIds는 null일 수 없습니다.");
+        return feedbackScoreRepository.findById_FeedbackLogIdIn(feedbackLogIds);
+    }
+
+    /**
      * 점수들을 한 번에 저장한다. REQUIRED라 호출부(createFeedbackLogWithScores)의
      * REQUIRES_NEW 트랜잭션에 합류한다.
      */
     @Transactional
-    public List<FeedbackScore> saveAll(List<FeedbackScore> scores) {
+    public void saveAll(List<FeedbackScore> scores) {
         Objects.requireNonNull(scores, "scores는 null일 수 없습니다.");
-        return feedbackScoreRepository.saveAll(scores);
+        feedbackScoreRepository.saveAll(scores);
     }
+
+
 }

@@ -12,4 +12,9 @@ public interface RoomEnvironmentReadingRepository extends JpaRepository<RoomEnvi
      * 특정 스냅샷에 딸린 실측값 전체를 조회한다.
      */
     List<RoomEnvironmentReading> findById_SnapshotId(Long snapshotId);
+
+    /**
+     * snapshotId 목록에 딸린 실측값 전체를 한 번에 조회한다.
+     */
+    List<RoomEnvironmentReading> findById_SnapshotIdIn(List<Long> snapshotIds);
 }

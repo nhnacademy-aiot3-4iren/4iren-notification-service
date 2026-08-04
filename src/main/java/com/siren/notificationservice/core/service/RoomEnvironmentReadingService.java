@@ -28,12 +28,21 @@ public class RoomEnvironmentReadingService {
     }
 
     /**
+     * snapshotId 목록에 딸린 실측값 전체를 한 번에 조회한다. N+1 방지용 배치 조회.
+     */
+    @Transactional(readOnly = true)
+    public List<RoomEnvironmentReading> getReadingsBySnapshotIds(List<Long> snapshotIds) {
+        Objects.requireNonNull(snapshotIds, "snapshotIds는 null일 수 없습니다.");
+        return roomEnvironmentReadingRepository.findById_SnapshotIdIn(snapshotIds);
+    }
+
+    /**
      * 실측값들을 한 번에 저장한다. REQUIRED라 호출부(createWithReadings)의
      * REQUIRES_NEW 트랜잭션에 합류한다.
      */
     @Transactional
-    public List<RoomEnvironmentReading> saveAll(List<RoomEnvironmentReading> readings) {
+    public void saveAll(List<RoomEnvironmentReading> readings) {
         Objects.requireNonNull(readings, "readings는 null일 수 없습니다.");
-        return roomEnvironmentReadingRepository.saveAll(readings);
+        roomEnvironmentReadingRepository.saveAll(readings);
     }
 }

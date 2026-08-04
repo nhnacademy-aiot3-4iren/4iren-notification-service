@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
@@ -37,13 +36,9 @@ public class FeedbackLogService {
         return feedbackLogRepository.findById(feedbackLogId).orElse(null);
     }
 
-    /**
-     * 새 피드백 로그를 만든다. snapshot/outsideWeatherSnapshot/experiencedAt은 nullable이다.
-     */
-    @Transactional
-    public FeedbackLog createFeedbackLog(Long userId, Long roomId, RoomEnvironmentSnapshot snapshot,
-                                          OutsideWeatherSnapshot outsideWeatherSnapshot, String rawText,
-                                          ZonedDateTime createdAt, boolean delayed, ZonedDateTime experiencedAt) {
+    private FeedbackLog createFeedbackLog(Long userId, Long roomId, RoomEnvironmentSnapshot snapshot,
+                                           OutsideWeatherSnapshot outsideWeatherSnapshot, String rawText,
+                                           ZonedDateTime createdAt, boolean delayed, ZonedDateTime experiencedAt) {
         Objects.requireNonNull(userId, "userId는 null일 수 없습니다.");
         Objects.requireNonNull(roomId, "roomId는 null일 수 없습니다.");
         Objects.requireNonNull(rawText, "rawText는 null일 수 없습니다.");
@@ -62,11 +57,9 @@ public class FeedbackLogService {
 
     /**
      * FeedbackLog와 FeedbackScore들을 하나의 트랜잭션으로 저장한다(둘이 원자적으로 묶여야 함).
-     * REQUIRES_NEW인 이유: 호출부(persist())가 Core를 직접 호출해서 @Transactional이 없는데
-     * 나중에 실수로 걸리더라도 이 메서드는 항상 독립된 트랜잭션으로 동작하게 하기 위함이다.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public FeedbackLog createFeedbackLogWithScores(Long userId, Long roomId, RoomEnvironmentSnapshot snapshot,
+    @Transactional
+    public void createFeedbackLogWithScores(Long userId, Long roomId, RoomEnvironmentSnapshot snapshot,
                                                     OutsideWeatherSnapshot outsideWeatherSnapshot, String rawText,
                                                     ZonedDateTime createdAt, boolean delayed, ZonedDateTime experiencedAt,
                                                     List<FeedbackExtractionResult.SensorScore> sensorScores) {
@@ -83,7 +76,6 @@ public class FeedbackLogService {
                         .build())
                 .toList();
         feedbackScoreService.saveAll(feedbackScores);
-        return feedbackLog;
     }
 
     /**
@@ -93,7 +85,8 @@ public class FeedbackLogService {
     public List<FeedbackLog> getFeedbackLogs(Long sinceId, int limit) {
         Objects.requireNonNull(sinceId, "sinceId는 null일 수 없습니다.");
         if (limit <= 0) {
-            throw new IllegalArgumentException("limit은 1 이상이어야 합니다.");
+            log.warn("[FeedbackLogService] limit이 음수값으로 들어와 1로 보정합니다 (limit={})", limit);
+            limit = 1;
         }
         return feedbackLogRepository.findByFeedbackLogIdGreaterThanOrderByFeedbackLogIdAsc(sinceId, PageRequest.of(0, limit));
     }
