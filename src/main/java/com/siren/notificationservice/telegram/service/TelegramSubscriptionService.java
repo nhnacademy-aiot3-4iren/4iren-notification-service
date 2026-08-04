@@ -65,7 +65,7 @@ public class TelegramSubscriptionService {
         Update update = event.update();
         ChatMemberUpdated chatMemberUpdated = update.getMyChatMember();
         String newStatus = chatMemberUpdated.getNewChatMember().getStatus(); // 새로운 상태의 status 값을 확인
-        String chatId = chatMemberUpdated.getChat().getId().toString();
+        String chatId = event.chatId();
         Optional<TelegramSubscription> telegramSubscription =
                 telegramSubscriptionRepository.findByChatIdAndBotType(chatId, event.botType());
 

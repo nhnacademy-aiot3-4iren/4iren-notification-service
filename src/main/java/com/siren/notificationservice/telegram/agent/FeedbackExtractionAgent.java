@@ -110,7 +110,7 @@ public class FeedbackExtractionAgent {
         }
     }
 
-    private GoogleGenAiChatOptions.Builder buildJsonOptions(List<String> subscribedRoomNames) {
+    private GoogleGenAiChatOptions buildJsonOptions(List<String> subscribedRoomNames) {
         String roomEnumValues = subscribedRoomNames.stream()
                 .map(this::toJsonStringLiteral)
                 .collect(Collectors.joining(", "));
@@ -143,7 +143,8 @@ public class FeedbackExtractionAgent {
         return GoogleGenAiChatOptions.builder()
                 .model("gemini-flash-latest")
                 .responseMimeType("application/json")
-                .responseSchema(schemaJson);
+                .responseSchema(schemaJson)
+                .build();
     }
 
     /**
