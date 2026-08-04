@@ -10,7 +10,6 @@ import com.siren.notificationservice.core.repository.RoomEnvironmentSnapshotRepo
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -47,24 +46,6 @@ public class RoomEnvironmentSnapshotService {
     }
 
     /**
-     * 강의실의 새 스냅샷을 만든다. 같은 referenceAt이 이미 있으면 예외를 던진다.
-     */
-    @Transactional(propagation = Propagation.REQUIRED)
-    public RoomEnvironmentSnapshot createRoomEnvironmentSnapshot(Long roomId, ZonedDateTime referenceAt) {
-        Objects.requireNonNull(roomId, "roomId는 null일 수 없습니다.");
-        Objects.requireNonNull(referenceAt, "referenceAt은 null일 수 없습니다.");
-        if (findSnapshotId(roomId, referenceAt) != null) {
-            throw new RoomEnvironmentSnapshotAlreadyExistsException(roomId, referenceAt);
-        }
-        return roomEnvironmentSnapshotRepository.save(
-                RoomEnvironmentSnapshot.builder()
-                        .roomId(roomId)
-                        .windowStart(referenceAt)
-                        .build()
-        );
-    }
-
-    /**
      * referenceAt을 커버하는 스냅샷이 있으면 그 id를, 없으면 null을 반환한다.
      */
     public RoomEnvironmentSnapshot findSnapshotId(Long roomId, ZonedDateTime referenceAt) {
@@ -85,11 +66,8 @@ public class RoomEnvironmentSnapshotService {
 
     /**
      * Snapshot과 Reading들을 하나의 트랜잭션으로 저장한다(둘이 원자적으로 묶여야 함).
-     * REQUIRES_NEW인 이유: 호출부(FeedbackPersistenceService)가 Core를 직접 호출해서
-     * @Transactional이 없는데, 나중에 실수로 걸리더라도 이 메서드는 항상 독립된
-     * 트랜잭션으로 동작하게 하기 위함이다.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public RoomEnvironmentSnapshot createWithReadings(Long roomId, ZonedDateTime referenceAt, RoomEnvironmentReadingResponse readings) {
         Objects.requireNonNull(readings, "readings는 null일 수 없습니다.");
         RoomEnvironmentSnapshot snapshot = createRoomEnvironmentSnapshot(roomId, referenceAt);
@@ -100,6 +78,23 @@ public class RoomEnvironmentSnapshotService {
                 .toList();
         roomEnvironmentReadingService.saveAll(validReadings);
         return snapshot;
+    }
+
+    /**
+     * 강의실의 새 스냅샷을 만든다. 같은 referenceAt이 이미 있으면 예외를 던진다.
+     */
+    private RoomEnvironmentSnapshot createRoomEnvironmentSnapshot(Long roomId, ZonedDateTime referenceAt) {
+        Objects.requireNonNull(roomId, "roomId는 null일 수 없습니다.");
+        Objects.requireNonNull(referenceAt, "referenceAt은 null일 수 없습니다.");
+        if (findSnapshotId(roomId, referenceAt) != null) {
+            throw new RoomEnvironmentSnapshotAlreadyExistsException(roomId, referenceAt);
+        }
+        return roomEnvironmentSnapshotRepository.save(
+                RoomEnvironmentSnapshot.builder()
+                        .roomId(roomId)
+                        .windowStart(referenceAt)
+                        .build()
+        );
     }
 
     /**

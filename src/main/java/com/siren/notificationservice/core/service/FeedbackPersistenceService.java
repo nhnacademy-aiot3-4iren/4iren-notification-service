@@ -24,7 +24,8 @@ import java.util.regex.Pattern;
 
 /**
  * FeedbackProcessingEvent를 DB 레코드로 저장한다. Core API를 직접 호출하기 때문에 persist()엔
- * 의도적으로 @Transactional이 없다 — 원자성이 필요한 저장은 하위 서비스가 REQUIRES_NEW로 처리한다.
+ * 의도적으로 @Transactional이 없다
+ * 원자성이 필요한 부분은 각 서비스로직에서 트랜잭션을 관리하도록 한다.
  */
 @Service
 @Slf4j
@@ -141,7 +142,7 @@ public class FeedbackPersistenceService {
         try {
             return new BigDecimal(numericPart);
         } catch (NumberFormatException e) {
-            // Core가 "-"처럼 단위만 떼면 숫자가 안 되는 결측치 표기를 보낼 수 있음 - 값 하나 생략,
+            // Core가 "-"처럼 단위만 떼면 숫자가 안 되는 결측치 표기를 보낼 수 있음 -> 값 하나 생략,
             // 피드백 전체를 실패시키지 않음.
             log.warn("[FeedbackPersistenceService] 숫자 파싱 실패, 값 생략 (rawValue={})", rawValue, e);
             return null;
