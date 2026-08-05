@@ -1,4 +1,4 @@
-package com.siren.notificationservice.core.service;
+package com.siren.notificationservice.core.service.basic_service;
 
 import com.siren.notificationservice.core.entity.table.RoomEnvironmentReading;
 import com.siren.notificationservice.core.repository.RoomEnvironmentReadingRepository;

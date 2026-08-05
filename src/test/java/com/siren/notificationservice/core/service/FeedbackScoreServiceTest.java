@@ -4,6 +4,7 @@ import com.siren.notificationservice.core.entity.domain.FeedbackScoreId;
 import com.siren.notificationservice.core.entity.domain.SensorType;
 import com.siren.notificationservice.core.entity.table.FeedbackScore;
 import com.siren.notificationservice.core.repository.FeedbackScoreRepository;
+import com.siren.notificationservice.core.service.basic_service.FeedbackScoreService;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

@@ -12,7 +12,10 @@ import lombok.NoArgsConstructor;
 import java.time.ZonedDateTime;
 
 @Entity
-@Table(name = "alert_history")
+@Table(name = "alert_history",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_alert_history_event_user_bot", columnNames = {"event_id", "user_id", "bot_type"})
+        })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -33,6 +36,9 @@ public class AlertHistory {
     @Enumerated(EnumType.STRING)
     @Column(name = "alert_type", length = 50)
     private AlertType alertType; // 예: VENTILATION_RECOMMEND, SENSOR_ANOMALY
+
+    @Column(name = "event_id", length = 100, nullable = false)
+    private String eventId; // Processing/RuleEngine이 발급 -> (event_id, user_id) 복합 UNIQUE로 재처리 시 중복 발송 방지
 
     @Column(name = "message", columnDefinition = "TEXT", nullable = false)
     private String message;

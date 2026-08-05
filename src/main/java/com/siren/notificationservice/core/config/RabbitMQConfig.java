@@ -30,6 +30,21 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.routing-key.feedback-processing}")
     private String feedbackProcessingRoutingKey;
 
+    @Value("${rabbitmq.exchange.alert-events}")
+    private String alertEventsExchangeName;
+
+    @Value("${rabbitmq.queue.alert-urgent}")
+    private String alertUrgentQueueName;
+
+    @Value("${rabbitmq.routing-key.alert-urgent}")
+    private String alertUrgentRoutingKey;
+
+    @Value("${rabbitmq.queue.alert-digest}")
+    private String alertDigestQueueName;
+
+    @Value("${rabbitmq.routing-key.alert-digest}")
+    private String alertDigestRoutingKey;
+
     /**
      * @return JSON - DTO 변환기 (RabbitTemplate과 리스너 컨테이너에 자동 적용됨)
      */
@@ -98,6 +113,47 @@ public class RabbitMQConfig {
     @Bean
     public Binding feedbackProcessingBinding(Queue feedbackProcessingQueue, TopicExchange notificationInternalExchange) {
         return BindingBuilder.bind(feedbackProcessingQueue).to(notificationInternalExchange).with(feedbackProcessingRoutingKey);
+    }
+
+    /**
+     * Processing/RuleEngine이 발행하는 AlertEvent용 익스체인지
+     * @return alert-events 익스체인지
+     */
+    @Bean
+    public TopicExchange alertEventsExchange() {
+        return new TopicExchange(alertEventsExchangeName);
+    }
+
+    /**
+     * 긴급 알림(COMFORT_LIMIT_EXCEEDED/SENSOR_ANOMALY) 전용 큐.
+     */
+    @Bean
+    public Queue alertUrgentQueue() {
+        return new Queue(alertUrgentQueueName, true);
+    }
+
+    /**
+     * 비긴급 알림(VENTILATION_RECOMMEND) 전용 큐.
+     */
+    @Bean
+    public Queue alertDigestQueue() {
+        return new Queue(alertDigestQueueName, true);
+    }
+
+    /**
+     * alertUrgentQueue를 라우팅 키(와일드카드)에 바인딩
+     */
+    @Bean
+    public Binding alertUrgentBinding(Queue alertUrgentQueue, TopicExchange alertEventsExchange) {
+        return BindingBuilder.bind(alertUrgentQueue).to(alertEventsExchange).with(alertUrgentRoutingKey);
+    }
+
+    /**
+     * alertDigestQueue를 라우팅 키(와일드카드)에 바인딩
+     */
+    @Bean
+    public Binding alertDigestBinding(Queue alertDigestQueue, TopicExchange alertEventsExchange) {
+        return BindingBuilder.bind(alertDigestQueue).to(alertEventsExchange).with(alertDigestRoutingKey);
     }
 
 }

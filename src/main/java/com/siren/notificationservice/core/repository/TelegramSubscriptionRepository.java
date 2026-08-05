@@ -20,6 +20,15 @@ public interface TelegramSubscriptionRepository extends JpaRepository<TelegramSu
     List<TelegramSubscription> findByUserIdInAndBotTypeAndActiveTrue(List<Long> userIds, BotType botType);
 
     /**
+     * 주어진 유저 id 목록 중 봇 타입 무관하게 연동돼 있고 아직 차단하지 않은(active) 건 전부 조회한다.
+     * Admin/Member 봇 둘 다 연동된 유저면 둘 다 나온다
+     *
+     * @param userIds 대상 유저 id 목록
+     * @return 활성 상태인 텔레그램 연동 목록 (봇 타입 무관)
+     */
+    List<TelegramSubscription> findByUserIdInAndActiveTrue(List<Long> userIds);
+
+    /**
      * 특정 유저의 특정 봇 연동 row 하나를 조회한다 ({UNIQUE(user_id, bot_type)} 기준 단건).
      * /start 처리 시 최초 연동인지 재연동인지 판단하는 데 쓴다.
      *

@@ -2,6 +2,7 @@ package com.siren.notificationservice.core.client;
 
 import com.siren.notificationservice.core.dto.response.OutsideWeather;
 import com.siren.notificationservice.core.dto.response.RoomEnvironmentReadingResponse;
+import com.siren.notificationservice.core.dto.response.RoomSubscribersResponse;
 import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,9 @@ public interface CoreApiClient {
      */
     @GetMapping("/api/core/internal/users/{user-id}/room-subscriptions")
     UserRoomSubResponse getRoomSubscriptions(@PathVariable("user-id") Long userId);
+
+    @GetMapping("/api/core/internal/rooms/{room-id}/subscribers")
+    RoomSubscribersResponse getSubscribers(@PathVariable("room-id") Long roomId);
 
     /**
      * 해당 강의실에 대한 환경 값 스냡샷을 남긴다.

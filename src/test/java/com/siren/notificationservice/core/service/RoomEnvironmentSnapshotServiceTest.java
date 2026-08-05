@@ -4,6 +4,8 @@ import com.siren.notificationservice.core.dto.response.RoomEnvironmentReadingRes
 import com.siren.notificationservice.core.entity.table.RoomEnvironmentSnapshot;
 import com.siren.notificationservice.core.exception.RoomEnvironmentSnapshotAlreadyExistsException;
 import com.siren.notificationservice.core.repository.RoomEnvironmentSnapshotRepository;
+import com.siren.notificationservice.core.service.basic_service.RoomEnvironmentReadingService;
+import com.siren.notificationservice.core.service.basic_service.RoomEnvironmentSnapshotService;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
