@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +33,7 @@ class AlertHistoryRepositoryTest {
                 .botType(BotType.ADMIN_BOT)
                 .alertType(AlertType.SENSOR_ANOMALY)
                 .message("센서 이상 감지")
-                .sendAt(ZonedDateTime.now())
+                .sendAt(ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS))
                 .userId(1L)
                 .build());
 

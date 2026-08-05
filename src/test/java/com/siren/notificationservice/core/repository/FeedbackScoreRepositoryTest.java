@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,8 +67,9 @@ class FeedbackScoreRepositoryTest {
         return FeedbackLog.builder()
                 .roomId(7L)
                 .rawText("더워요")
-                .createdAt(ZonedDateTime.now())
+                .createdAt(ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS))
                 .userId(1L)
+                .delayed(false)
                 .build();
     }
 

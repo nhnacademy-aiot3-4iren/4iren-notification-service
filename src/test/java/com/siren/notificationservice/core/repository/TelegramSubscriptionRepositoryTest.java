@@ -8,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,7 +90,7 @@ class TelegramSubscriptionRepositoryTest {
                 .botType(botType)
                 .chatId(chatId)
                 .active(active)
-                .createdAt(ZonedDateTime.now())
+                .createdAt(ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS))
                 .build();
     }
 }

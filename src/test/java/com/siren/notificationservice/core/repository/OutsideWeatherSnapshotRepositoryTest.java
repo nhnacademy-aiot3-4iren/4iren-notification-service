@@ -7,6 +7,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,7 +26,8 @@ class OutsideWeatherSnapshotRepositoryTest {
 
     @Test
     void findsSnapshotByRegionAndWindowStart() {
-        ZonedDateTime windowStart = ZonedDateTime.now();
+
+        ZonedDateTime windowStart = ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         outsideWeatherSnapshotRepository.save(OutsideWeatherSnapshot.builder()
                 .nx(60).ny(127).windowStart(windowStart).build());
 

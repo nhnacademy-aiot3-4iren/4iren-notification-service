@@ -7,6 +7,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,7 +27,8 @@ class RoomEnvironmentSnapshotRepositoryTest {
 
     @Test
     void findsFirstSnapshotCoveringReferenceTime() {
-        ZonedDateTime windowStart = ZonedDateTime.now();
+
+        ZonedDateTime windowStart = ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         roomEnvironmentSnapshotRepository.save(createRoomEnvironmentSnapshot(3L, windowStart));
 
         Optional<RoomEnvironmentSnapshot> found = roomEnvironmentSnapshotRepository
