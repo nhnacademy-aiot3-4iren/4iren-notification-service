@@ -47,15 +47,20 @@ public class FeedbackPersistenceService {
         // 외부 날씨 조회
         OutsideWeatherSnapshot outsideSnapshot = findOutsideWeatherSnapshot(event.roomId(), referenceAt);
 
+        // event의 시각들은 큐 안에서만 도는 LocalDateTime이지만, FeedbackLog 엔티티 컬럼은
+        // ZonedDateTime이라 여기(DB로 넘어가는 경계)서 변환한다.
+        ZonedDateTime createdAt = event.receivedAt().atZone(SERVICE_ZONE);
+        ZonedDateTime experiencedAt = event.experiencedAt() != null ? event.experiencedAt().atZone(SERVICE_ZONE) : null;
+
         feedbackLogService.createFeedbackLogWithScores(
                 event.userId(),
                 event.roomId(),
                 sensorSnapshot,
                 outsideSnapshot,
                 event.rawText(),
-                event.receivedAt(),
+                createdAt,
                 event.isDelayed(),
-                event.experiencedAt(),
+                experiencedAt,
                 event.sensorScores()
         );
     }
@@ -109,7 +114,7 @@ public class FeedbackPersistenceService {
     // 숫자/소수점/마이너스만 남기고 나머지는 전부 제거하는 쪽으로
     private static final Pattern NON_NUMERIC = Pattern.compile("[^0-9.\\-]");
     private static final DateTimeFormatter BASE_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-    private static final ZoneId WEATHER_ZONE = ZoneId.of("Asia/Seoul"); // Core 응답에 타임존이 없어 고정 — 다지역 확장 시 가장 먼저 깨질 지점
+    private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul"); // Core 응답/이벤트 시각에 타임존이 없어 고정 — 다지역 확장 시 가장 먼저 깨질 지점
 
     /**
      * 같은 지역(nx, ny)·같은 시간대 스냅샷은 강의실이 달라도 공유 재사용한다. 생성 전에 한 번
@@ -118,7 +123,7 @@ public class FeedbackPersistenceService {
     private OutsideWeatherSnapshot createWeatherSnapshot(OutsideWeather weather) {
         ZonedDateTime windowStart;
         try {
-            windowStart = LocalDateTime.parse(weather.baseDateTime(), BASE_DATE_TIME_FORMAT).atZone(WEATHER_ZONE);
+            windowStart = LocalDateTime.parse(weather.baseDateTime(), BASE_DATE_TIME_FORMAT).atZone(SERVICE_ZONE);
         } catch (DateTimeParseException e) {
             // baseDateTime 형식이 예상과 다르면 이 피드백의 날씨 스냅샷만 포기한다.
             log.warn("[FeedbackPersistenceService] baseDateTime 파싱 실패, 외부 날씨 스냅샷 생략 (baseDateTime={})", weather.baseDateTime(), e);

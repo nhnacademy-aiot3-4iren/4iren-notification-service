@@ -34,7 +34,7 @@ public class IntentClassificationAgent {
         - intent 필드에는 FEEDBACK, QUESTION, FALLBACK 중 정확히 하나만 채운다.
         """;
     private final ObjectMapper objectMapper;
-    private final GoogleGenAiChatOptions.Builder googleGenAiChatOptions;
+    private final GoogleGenAiChatOptions googleGenAiChatOptions;
     private final IntentRouteDispatcher intentRouteDispatcher;
 
     private final ChatClient chatClient;
@@ -78,7 +78,7 @@ public class IntentClassificationAgent {
         intentRouteDispatcher.dispatch(intentType, event, userId);
     }
 
-    private GoogleGenAiChatOptions.Builder buildJsonOptions(){
+    private GoogleGenAiChatOptions buildJsonOptions(){
         String schemaJson = """
             {
               "type": "OBJECT",
@@ -91,6 +91,7 @@ public class IntentClassificationAgent {
         return GoogleGenAiChatOptions.builder()
                 .model("gemini-flash-latest")
                 .responseMimeType("application/json")
-                .responseSchema(schemaJson);
+                .responseSchema(schemaJson)
+                .build();
     }
 }

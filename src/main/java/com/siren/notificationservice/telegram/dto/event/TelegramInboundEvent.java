@@ -27,21 +27,31 @@ public final class TelegramInboundEvent {
         this.botType = botType;
         this.update = update;
 
-        if(update.hasCallbackQuery()){
+        if(update.hasCallbackQuery()) {
             CallbackQuery cq = update.getCallbackQuery();
             this.chatId = cq.getMessage().getChatId().toString();
 
             String data = cq.getData(); //"FB_ROOM:301호"
             int idx = data.indexOf(CALLBACK_DELIMITER); // 7
-            this.question =  idx >= 0 ? data.substring(idx + 1) : data;
+            this.question = idx >= 0 ? data.substring(idx + 1) : data;
             String prefix = idx >= 0 ? data.substring(0, idx) : data; // 0-7까지 FB_ROOM
             this.callbackActionType = CallbackActionType.fromPrefix(prefix).orElse(null);
             this.requestAt = LocalDateTime.now();
-        }else {
+        }else if(update.hasMyChatMember()){
+            this.chatId = update.getMyChatMember().getChat().getId().toString();
+            this.question = null;
+            this.callbackActionType = null;
+            this.requestAt = LocalDateTime.ofEpochSecond(update.getMyChatMember().getDate(), 0, ZoneOffset.ofHours(9));
+        }else if(update.hasMessage()) {
             this.chatId = update.getMessage().getChatId().toString();
             this.question = update.getMessage().getText();
             this.callbackActionType = null;
             this.requestAt = LocalDateTime.ofEpochSecond(update.getMessage().getDate(), 0, ZoneOffset.ofHours(9));
+        }else{
+            this.chatId = null;
+            this.question = null;
+            this.callbackActionType = null;
+            this.requestAt = LocalDateTime.now();
         }
     }
 

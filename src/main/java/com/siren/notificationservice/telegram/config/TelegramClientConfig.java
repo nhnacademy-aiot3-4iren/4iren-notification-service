@@ -1,13 +1,13 @@
 package com.siren.notificationservice.telegram.config;
 
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.api.objects.MaybeInaccessibleMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
-import tools.jackson.databind.module.SimpleModule;
 
 @Configuration
 @EnableConfigurationProperties(TelegramBotProperties.class)
@@ -42,8 +42,8 @@ public class TelegramClientConfig {
      * JSON 역직렬화 단계에서 500으로 죽는다. Message로 매핑해서 해결한다.
      */
     @Bean
-    public JsonMapperBuilderCustomizer telegramCallbackJacksonCustomizer() {
-        return builder -> builder.addModule(new SimpleModule()
+    public Jackson2ObjectMapperBuilderCustomizer telegramCallbackJacksonCustomizer() {
+        return builder -> builder.modules(new SimpleModule()
                 .addAbstractTypeMapping(MaybeInaccessibleMessage.class, Message.class));
     }
 }

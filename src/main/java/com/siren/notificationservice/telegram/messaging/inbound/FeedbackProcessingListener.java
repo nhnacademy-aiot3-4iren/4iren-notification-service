@@ -7,12 +7,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class FeedbackProcessingListener {
+
+    // FeedbackProcessingEvent는 큐 안에서만 도는 내부 이벤트라 LocalDateTime이지만,
+    // 여기서 DB로 넘어가는 경계이므로 엔티티가 쓰는 ZonedDateTime으로 변환한다.
+    private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
     private final FeedbackPersistenceService feedbackPersistenceService;
 
@@ -24,7 +30,8 @@ public class FeedbackProcessingListener {
     public void handle(FeedbackProcessingEvent event) {
         try{
             /// 피드백 시점: 사용자가 텍스트에서 언급한 시간을 기준으로 없으면 메시지 도착 시각으로 대체함 "아까 2시에 더웠어요" 2시를 기준으로해야됨
-            ZonedDateTime referenceAt = event.experiencedAt() != null ? event.experiencedAt() : event.receivedAt();
+            LocalDateTime referenceAtLocal = event.experiencedAt() != null ? event.experiencedAt() : event.receivedAt();
+            ZonedDateTime referenceAt = referenceAtLocal.atZone(ZONE);
             feedbackPersistenceService.persist(event,referenceAt);
         }catch (Exception e){
             // 위 어디서든(metrics 조회든 DB 저장이든) 예상 못 한 예외가 나도 여기서 끝낸다.
