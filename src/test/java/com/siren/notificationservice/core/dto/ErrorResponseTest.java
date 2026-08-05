@@ -2,7 +2,7 @@ package com.siren.notificationservice.core.dto;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -10,7 +10,7 @@ class ErrorResponseTest {
 
     @Test
     void ofSetsStatusAndMessageWithCurrentTimestamp() {
-        ZonedDateTime before = ZonedDateTime.now();
+        LocalDateTime before = LocalDateTime.now();
 
         ErrorResponse response = ErrorResponse.of(400, "잘못된 요청입니다");
 

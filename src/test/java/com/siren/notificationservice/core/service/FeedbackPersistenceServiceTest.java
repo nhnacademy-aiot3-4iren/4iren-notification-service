@@ -38,7 +38,7 @@ class FeedbackPersistenceServiceTest {
             roomEnvironmentSnapshotService, outsideWeatherSnapshotService, regionCacheService, feedbackLogService, coreApiClient);
 
     private FeedbackProcessingEvent event() {
-        return new FeedbackProcessingEvent(1L, 7L, "더워요", List.of(), false, null, ZonedDateTime.now());
+        return new FeedbackProcessingEvent(1L, 7L, "더워요", List.of(), false, null, LocalDateTime.now());
     }
 
     @Test

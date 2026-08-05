@@ -12,7 +12,9 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.chatmember.ChatMemberBanned;
 import org.telegram.telegrambots.meta.api.objects.chatmember.ChatMemberMember;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 /**
@@ -35,7 +37,9 @@ public class TelegramSubscriptionService {
      */
     public void handleValidStart(TelegramInboundEvent event, Long userId) {
         String chatId = event.chatId();
-        ZonedDateTime now = ZonedDateTime.now();
+        // DB 컬럼(DATETIME)은 초 단위 정밀도. 나노초까지 있는 값을 그대로 저장하면
+        // 나중에 다시 읽어온 값과 비교할 때 어긋날 수 있어 저장 전에 초 단위로 자름
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).truncatedTo(ChronoUnit.SECONDS);
 
         // 연동이 최초인지, 재연동인지 판단
         Optional<TelegramSubscription> existing =

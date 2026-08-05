@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,7 +27,7 @@ class FeedbackProcessingEventPublisherTest {
 
     @Test
     void publishSendsEventAndReturnsTrue() {
-        FeedbackProcessingEvent event = new FeedbackProcessingEvent(1L, 7L, "더워요", List.of(), false, null, ZonedDateTime.now());
+        FeedbackProcessingEvent event = new FeedbackProcessingEvent(1L, 7L, "더워요", List.of(), false, null, LocalDateTime.now());
 
         boolean result = publisher.publish(event);
 
@@ -37,7 +37,7 @@ class FeedbackProcessingEventPublisherTest {
 
     @Test
     void publishReturnsFalseWhenRabbitTemplateFails() {
-        FeedbackProcessingEvent event = new FeedbackProcessingEvent(1L, 7L, "더워요", List.of(), false, null, ZonedDateTime.now());
+        FeedbackProcessingEvent event = new FeedbackProcessingEvent(1L, 7L, "더워요", List.of(), false, null, LocalDateTime.now());
         doThrow(new RuntimeException("브로커 연결 실패"))
                 .when(rabbitTemplate).convertAndSend("notification.events", "notification.feedback-processing", event);
 

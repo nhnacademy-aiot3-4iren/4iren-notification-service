@@ -19,8 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -112,8 +111,8 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
      * 이 메서드가 예외를 던지면 DLQ 없는 리스너 구조상 무한 재큐잉으로 이어지기 때문이다.
      */
     private void proceedWithConfirmedRoom(TelegramInboundEvent event, Long userId, String rawText, Long roomId, FeedbackExtractionResult feedbackExtractionResult) {
-        ZonedDateTime receivedAt = event.requestAt().atZone(ZoneOffset.ofHours(9));
-        ZonedDateTime experiencedAt = ExperiencedTimeResolver.resolve(feedbackExtractionResult, receivedAt);
+        LocalDateTime receivedAt = event.requestAt();
+        LocalDateTime experiencedAt = ExperiencedTimeResolver.resolve(feedbackExtractionResult, receivedAt);
 
         FeedbackProcessingEvent processingEvent = new FeedbackProcessingEvent(
                 userId, roomId, rawText,
