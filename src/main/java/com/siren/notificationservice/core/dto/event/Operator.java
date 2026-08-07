@@ -20,11 +20,6 @@ public enum Operator {
         this.label= label;
     }
 
-    /**
-     * RuleEngine이 심볼(예: "&lt;")로 보내는 값을 우리 enum으로 변환한다. Jackson이 역직렬화 시 자동 호출.
-     * 모르는 심볼이면 예외 대신 null을 반환한다 — 메시지 역직렬화 단계에서 예외가 나면 리스너까지
-     * 닿지도 못하고 무한 재큐잉으로 이어지기 때문.
-     */
     @JsonCreator
     public static Operator fromSymbol(String symbol){
         for(Operator operator : Operator.values()){

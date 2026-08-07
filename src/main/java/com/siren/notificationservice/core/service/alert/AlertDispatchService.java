@@ -1,15 +1,15 @@
-package com.siren.notificationservice.core.service;
+package com.siren.notificationservice.core.service.alert;
 
 import com.siren.notificationservice.core.client.CoreApiClient;
 import com.siren.notificationservice.core.dto.AlertHistoryKey;
+import com.siren.notificationservice.core.dto.event.AlertDigestBufferEntry;
 import com.siren.notificationservice.core.dto.event.AlertEvent;
 import com.siren.notificationservice.core.dto.response.RoomSubscribersResponse;
-import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.table.AlertHistory;
 import com.siren.notificationservice.core.entity.table.TelegramSubscription;
-import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
 import com.siren.notificationservice.core.service.basic_service.AlertHistoryService;
 import com.siren.notificationservice.telegram.service.TelegramMessageService;
+import com.siren.notificationservice.core.service.basic_service.TelegramSubscriptionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,10 +33,11 @@ public class AlertDispatchService {
     private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
     private final CoreApiClient coreApiClient;
-    private final TelegramSubscriptionRepository telegramSubscriptionRepository;
+    private final TelegramSubscriptionService telegramSubscriptionService;
     private final AlertMessageFormatter alertMessageFormatter;
     private final TelegramMessageService telegramMessageService;
     private final AlertHistoryService alertHistoryService;
+    private final AlertDigestBufferService alertDigestBufferService;
 
     /**
      * 긴급 알림 - 해당 룸 관리자 전원에게 즉시 개별 발송한다.
@@ -44,21 +45,20 @@ public class AlertDispatchService {
     public void dispatchUrgent(AlertEvent event) {
         RoomSubscribersResponse response = coreApiClient.getSubscribers(event.roomId()); //해당 룸 아이디를 가진 사용자 조회
         List<Long> recipientUserIds = extractRecipients(response);
-        List<TelegramSubscription> subscriptions = telegramSubscriptionRepository
-                .findByUserIdInAndBotTypeAndActiveTrue(recipientUserIds, BotType.ADMIN_BOT);
+        List<TelegramSubscription> subscriptions =
+                telegramSubscriptionService.findActiveAdminSubscriptions(recipientUserIds);
         sendAndRecord(event, response.roomName(), subscriptions);
     }
 
     /**
      * 비긴급 알림 - notificationEnabled인 구독자 + 관리자 전원, 연동된 봇 채널 전부로 발송한다.
-     * TODO: 디바운스 버퍼 설계 전이라 일단 즉시 발송한다. 버퍼 설계되면 여기를 적재 로직으로 교체.
+     * 다이제스트 버퍼에 3분간 쌓아두고 전송
      */
     public void dispatchDigest(AlertEvent event) {
         RoomSubscribersResponse response = coreApiClient.getSubscribers(event.roomId());
         List<Long> recipientUserIds = extractRecipients(response);
-        List<TelegramSubscription> subscriptions = telegramSubscriptionRepository
-                .findByUserIdInAndActiveTrue(recipientUserIds);
-        sendAndRecord(event, response.roomName(), subscriptions);
+        AlertDigestBufferEntry entry = new AlertDigestBufferEntry(event, response.roomName());
+        recipientUserIds.forEach(userId-> alertDigestBufferService.buffer(userId, entry));
     }
 
     /**
@@ -72,6 +72,7 @@ public class AlertDispatchService {
     }
 
     /**
+     * 긴급용 / 비긴급은 Listener에서 처리
      * 대상마다 (eventId, userId, botType) 중복 발송 여부를 확인하고, 아니면 발송 후 이력을 남긴다.
      * exists 확인과 save 사이 경합 가능성은 (event_id, user_id, bot_type) UNIQUE 제약이 최종 방어선.
      */
@@ -80,7 +81,6 @@ public class AlertDispatchService {
             log.info("[AlertDispatchService] 발송 대상 없음 (eventId={}, roomId={})", event.eventId(), event.roomId());
             return;
         }
-        // TODO: 노드 타입에 따른 메세지 포메터 재설계
         String message = alertMessageFormatter.format(event, roomName);
         List<AlertHistory> alertHistories = new ArrayList<>();
 

@@ -22,11 +22,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class TelegramSubscriptionServiceTest {
+class TelegramInboundSubServiceTest {
 
     private final TelegramSubscriptionRepository telegramSubscriptionRepository = mock(TelegramSubscriptionRepository.class);
-    private final TelegramSubscriptionService telegramSubscriptionService =
-            new TelegramSubscriptionService(telegramSubscriptionRepository);
+    private final TelegramInboundSubService telegramInboundSubService =
+            new TelegramInboundSubService(telegramSubscriptionRepository);
 
     private TelegramInboundEvent startEvent(String chatId) {
         Chat chat = new Chat();
@@ -59,7 +59,7 @@ class TelegramSubscriptionServiceTest {
         when(telegramSubscriptionRepository.findByUserIdAndBotType(1L, BotType.USER_BOT)).thenReturn(Optional.of(existing));
         TelegramInboundEvent event = startEvent("100");
 
-        telegramSubscriptionService.handleValidStart(event, 1L);
+        telegramInboundSubService.handleValidStart(event, 1L);
 
         assertThat(existing.getChatId()).isEqualTo("100");
         assertThat(existing.isActive()).isFalse(); // link()는 active를 안 건드림, 별도 unblock 필요
@@ -70,7 +70,7 @@ class TelegramSubscriptionServiceTest {
         when(telegramSubscriptionRepository.findByUserIdAndBotType(1L, BotType.USER_BOT)).thenReturn(Optional.empty());
         TelegramInboundEvent event = startEvent("100");
 
-        telegramSubscriptionService.handleValidStart(event, 1L);
+        telegramInboundSubService.handleValidStart(event, 1L);
 
         verify(telegramSubscriptionRepository).save(argThat(sub ->
                 sub.getUserId().equals(1L) && sub.getChatId().equals("100") && sub.isActive()));
@@ -83,7 +83,7 @@ class TelegramSubscriptionServiceTest {
         when(telegramSubscriptionRepository.findByChatIdAndBotType("100", BotType.USER_BOT)).thenReturn(Optional.of(subscription));
         TelegramInboundEvent event = myChatMemberEvent("100", new ChatMemberBanned());
 
-        telegramSubscriptionService.handleBlockedBot(event);
+        telegramInboundSubService.handleBlockedBot(event);
 
         assertThat(subscription.isActive()).isFalse();
     }
@@ -95,7 +95,7 @@ class TelegramSubscriptionServiceTest {
         when(telegramSubscriptionRepository.findByChatIdAndBotType("100", BotType.USER_BOT)).thenReturn(Optional.of(subscription));
         TelegramInboundEvent event = myChatMemberEvent("100", new ChatMemberMember());
 
-        telegramSubscriptionService.handleBlockedBot(event);
+        telegramInboundSubService.handleBlockedBot(event);
 
         assertThat(subscription.isActive()).isTrue();
     }
@@ -105,7 +105,7 @@ class TelegramSubscriptionServiceTest {
         when(telegramSubscriptionRepository.findByChatIdAndBotType("100", BotType.USER_BOT)).thenReturn(Optional.empty());
         TelegramInboundEvent event = myChatMemberEvent("100", new ChatMemberBanned());
 
-        telegramSubscriptionService.handleBlockedBot(event);
+        telegramInboundSubService.handleBlockedBot(event);
 
         // 예외 없이 조용히 넘어가야 한다 - 조회만 하고 그 이상 손댈 대상이 없다는 것 자체가 증거
         verify(telegramSubscriptionRepository).findByChatIdAndBotType("100", BotType.USER_BOT);

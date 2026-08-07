@@ -9,22 +9,20 @@ public record AlertEvent(
         Long roomId,
         AlertType alertType,
         String alertTitle,
-        List<MetricViolationDto> metricViolations,
+        String deviceEui,
+        String deviceName,
+        String point,
+        List<NodeResult> nodeResults,
         Instant detectedAt,
         String eventId // 멱등성 키
 ) {
-    public record MetricViolationDto(
-            String deviceEui,
+    public record NodeResult(
+            String nodeType,
             String metricType, //TEMPERATURE/HUMIDITY/CO2 등
-            List<NodeResult> nodeResults
-
-    ){
-        public record NodeResult(
-           String nodeType,
-           Operator operator,// nullable
-           String unit,
-           Double threshold,
-           Double value
-        ){}
+            Operator operator, // nullable
+            String unit,
+            Double threshold,
+            Double value
+    ) {
     }
 }

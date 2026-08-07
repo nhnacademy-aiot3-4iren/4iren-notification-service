@@ -7,9 +7,9 @@ import com.siren.notificationservice.telegram.agent.IntentClassificationAgent;
 import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.callback.handler.CallbackRouteDispatcher;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
+import com.siren.notificationservice.telegram.service.TelegramInboundSubService;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
 import com.siren.notificationservice.telegram.service.TelegramMessageService;
-import com.siren.notificationservice.telegram.service.TelegramSubscriptionService;
 import org.junit.jupiter.api.Test;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Chat;
@@ -29,12 +29,12 @@ import static org.mockito.Mockito.when;
 class TelegramInboundListenerTest {
 
     private final TelegramLinkTokenService telegramLinkTokenService = mock(TelegramLinkTokenService.class);
-    private final TelegramSubscriptionService telegramSubscriptionService = mock(TelegramSubscriptionService.class);
+    private final TelegramInboundSubService telegramInboundSubService = mock(TelegramInboundSubService.class);
     private final IntentClassificationAgent intentClassificationAgent = mock(IntentClassificationAgent.class);
     private final TelegramMessageService telegramMessageService = mock(TelegramMessageService.class);
     private final CallbackRouteDispatcher callbackRouteDispatcher = mock(CallbackRouteDispatcher.class);
     private final TelegramInboundListener telegramInboundListener = new TelegramInboundListener(
-            telegramLinkTokenService, telegramSubscriptionService, intentClassificationAgent,
+            telegramLinkTokenService, telegramInboundSubService, intentClassificationAgent,
             telegramMessageService, callbackRouteDispatcher);
 
     private TelegramInboundEvent textEvent(BotType botType, String text) {
@@ -92,7 +92,7 @@ class TelegramInboundListenerTest {
 
         telegramInboundListener.handle(event);
 
-        verify(telegramSubscriptionService).handleValidStart(event, 1L);
+        verify(telegramInboundSubService).handleValidStart(event, 1L);
         verify(telegramMessageService).sendLinkSuccessMessage(event.chatId(), BotType.USER_BOT);
     }
 
@@ -104,7 +104,7 @@ class TelegramInboundListenerTest {
         telegramInboundListener.handle(event);
 
         verify(telegramMessageService).sendTokenExpiredMessage(event.chatId(), BotType.USER_BOT);
-        verify(telegramSubscriptionService, never()).handleValidStart(any(), any());
+        verify(telegramInboundSubService, never()).handleValidStart(any(), any());
     }
 
     @Test
@@ -123,7 +123,7 @@ class TelegramInboundListenerTest {
 
         telegramInboundListener.handle(event);
 
-        verify(telegramSubscriptionService).handleBlockedBot(event);
+        verify(telegramInboundSubService).handleBlockedBot(event);
     }
 
     @Test

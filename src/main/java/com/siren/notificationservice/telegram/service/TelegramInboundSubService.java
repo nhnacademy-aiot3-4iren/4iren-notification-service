@@ -26,7 +26,7 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TelegramSubscriptionService {
+public class TelegramInboundSubService {
     private final TelegramSubscriptionRepository telegramSubscriptionRepository;
 
     /**
@@ -72,7 +72,7 @@ public class TelegramSubscriptionService {
                 telegramSubscriptionRepository.findByChatIdAndBotType(chatId, event.botType());
 
         if (ChatMemberBanned.STATUS.equals(newStatus)) { //사용자가 봇 차단
-            telegramSubscription.ifPresent(TelegramSubscription::block);
+            telegramSubscription.ifPresent(TelegramSubscription::block); // Transaction 쓰기 가능해야됨
         } else if (ChatMemberMember.STATUS.equals(newStatus)) { //사용자가 봇 차단 해제
             telegramSubscription.ifPresent(TelegramSubscription::unblock);
         }

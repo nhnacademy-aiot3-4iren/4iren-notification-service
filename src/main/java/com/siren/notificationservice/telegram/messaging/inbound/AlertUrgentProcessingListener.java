@@ -1,7 +1,7 @@
 package com.siren.notificationservice.telegram.messaging.inbound;
 
 import com.siren.notificationservice.core.dto.event.AlertEvent;
-import com.siren.notificationservice.core.service.AlertDispatchService;
+import com.siren.notificationservice.core.service.alert.AlertDispatchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

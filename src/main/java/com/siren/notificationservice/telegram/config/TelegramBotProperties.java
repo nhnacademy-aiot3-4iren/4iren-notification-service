@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record TelegramBotProperties(
         BotCredentials adminBot,
         BotCredentials memberBot,
-        WebHook webHook
+        WebHook webhook
 ) {
     public record BotCredentials(String token, String username) { }
     public record WebHook(String baseUrl){}
