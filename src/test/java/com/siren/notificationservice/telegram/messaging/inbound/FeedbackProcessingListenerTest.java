@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -41,15 +42,12 @@ class FeedbackProcessingListenerTest {
     }
 
     @Test
-    void handleSwallowsExceptionSoMessageIsNotRequeuedForever() {
+    void handleLetsExceptionPropagateSoItReachesDlq() {
         LocalDateTime receivedAt = LocalDateTime.now();
         FeedbackProcessingEvent event = new FeedbackProcessingEvent(1L, 7L, "더워요", List.of(), false, null, receivedAt);
         doThrow(new RuntimeException("DB 저장 실패")).when(feedbackPersistenceService).persist(event, receivedAt.atZone(ZONE));
 
-        feedbackProcessingListener.handle(event);
-
-        // 예외가 여기까지 올라오지 않고 조용히 끝나야 한다 (DLQ 없는 구조라 무한 재큐잉 방지) -
-        // handle()이 끝까지 실행돼서 persist가 실제로 호출됐다는 것 자체가 증거
-        verify(feedbackPersistenceService).persist(event, receivedAt.atZone(ZONE));
+        // 예상 밖 실패는 삼키지 않고 던져야 재시도→DLQ로 흘러간다 (DLQ 도입 후 정책)
+        assertThrows(RuntimeException.class, () -> feedbackProcessingListener.handle(event));
     }
 }

@@ -23,8 +23,8 @@ public class FeedbackProcessingListener {
     private final FeedbackPersistenceService feedbackPersistenceService;
 
     /**
-     * 강의실이 확정되고나서 받는 이벤트
-     * DLQ가 없어서 우선 try-catch로 무한 재큐잉방지함
+     * 강의실이 확정되고나서 받는 이벤트.
+     * 예상 밖 실패(DB 등)는 삼키지 않고 던져서 재시도→DLQ로 보낸다.
      */
     @RabbitListener(queues = "#{@feedbackProcessingQueue.name}")
     public void handle(FeedbackProcessingEvent event) {
