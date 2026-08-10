@@ -22,7 +22,7 @@ public class DlqRecoverer extends RepublishMessageRecoverer{
     private final MeterRegistry meterRegistry;
 
     public DlqRecoverer(RabbitTemplate rabbitTemplate,
-                        @Value("${rabbitmq.exchage.dlx}")String dlxExchange,
+                        @Value("${rabbitmq.exchange.dlx}")String dlxExchange,
                         @Value("${rabbitmq.routing-key.dlq}")String dlqRoutingKey,
                         MeterRegistry meterRegistry,
                         DlqFailureLogService dlqFailureLogService) {

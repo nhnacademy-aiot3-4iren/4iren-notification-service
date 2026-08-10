@@ -7,15 +7,12 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class TelegramSetHook implements ApplicationRunner {
     private final TelegramBotProperties telegramBotProperties;
-    private static final String SET_WEBHOOK_URL = "https://api.telegram.org/bot%s/setWebhook?url=%s";
+    private static final String SET_WEBHOOK_URL = "https://api.telegram.org/bot{token}/setWebhook?url={url}";
     private static final String ADMIN_URL = "/webhook/admin";
     private static final String MEMBER_URL = "/webhook/member";
     private final RestClient restClient = RestClient.create();
@@ -28,9 +25,8 @@ public class TelegramSetHook implements ApplicationRunner {
 
     private void registerWebhook(String token, String webhookUrl) {
         try{
-            String encodedUrl = URLEncoder.encode(webhookUrl, StandardCharsets.UTF_8);
             String response = restClient.get()
-                    .uri(String.format(SET_WEBHOOK_URL, token, encodedUrl))
+                    .uri(SET_WEBHOOK_URL, token, webhookUrl)
                     .retrieve()
                     .body(String.class);
             log.info("[TelegramSetHook] 웹훅 등록 요청 (url={}) -> {}", webhookUrl, response);

@@ -173,6 +173,11 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>runtime</scope>
+        </dependency>
         <!-- Test -->
         <!-- Spring Boot 테스트 기본 스타터 -->
         <dependency>

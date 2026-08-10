@@ -8,7 +8,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.time.Instant;
 
-@Document(indexName = "notification-dlq-failures")
+@Document(indexName = "4iren-notification-dlq-failures")
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
