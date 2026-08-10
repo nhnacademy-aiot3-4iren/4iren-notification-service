@@ -53,9 +53,9 @@ public class IntentClassificationAgent {
 
     /**
      * 자유 텍스트 메시지의 의도를 분류하고, 해당하는 IntentRouteHandler로 위임한다.
-     * 분류 자체가 실패하거나(LLM 호출 예외, 파싱 실패) 텍스트 추출이 안 되는 경우
-     * 전부 FALLBACK으로 처리한다 — 이 메서드가 예외를 던지면 DLQ 없는 리스너 구조상
-     * 무한 재큐잉으로 이어지므로, 여기서 반드시 흡수해야 한다.
+     * 분류 자체가 실패하는 경우(LLM 호출 예외, 파싱 실패)는 전부 FALLBACK으로 흡수한다 —
+     * LLM 실패는 재시도해도 쿼터만 태우고(특히 429), FALLBACK이 합리적 대체라 DLQ로 보낼 가치가 없다.
+     * 단, 흡수 이후 dispatch에서 나는 하위 실패(Core/Recommendation/DB 등)는 던져서 재시도→DLQ로 흘려보낸다.
      *
      * @param event 원본 텔레그램 인바운드 이벤트
      */

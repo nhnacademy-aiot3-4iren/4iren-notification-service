@@ -63,7 +63,7 @@ public class TelegramInboundListener {
      * 이미 연동 row가 있으면 chatId/createdAt만 갱신하고, 없으면 새로 만든다.
      * 토큰이 없거나(맨 "/start"만 오는 경우, 예: 봇 차단 해제 시 텔레그램이 자동으로 재전송하는 케이스)
      * 만료/이미 소비된 경우엔 재시도해도 절대 성공할 수 없으므로 예외 없이 조용히 무시한다
-     * — 그냥 던지면 DLQ가 없어서 무한 재큐잉된다. 사용자는 프론트에서 토큰을 다시 발급받아야 한다.
+     * — 재시도/DLQ로 보내도 무의미한 케이스라 의도적으로 흡수한다. 사용자는 프론트에서 토큰을 다시 발급받아야 한다.
      *
      * @param event 원본 이벤트 (botType 확인용)
      */
@@ -129,9 +129,9 @@ public class TelegramInboundListener {
     /**
      * chatId로 연동된 userId를 조회한다. 자유 텍스트/콜백 두 진입점이 공유하는 조회부 —
      * 연동 안 된 경우 안내 메시지를 보내고 빈 Optional을 반환해서, 두 곳 다 여기서
-     * TelegramSubscriptionNotFoundException을 흡수한다 (DLQ 없는 구조라 리스너 밖으로 새면 무한 재큐잉).
+     * TelegramSubscriptionNotFoundException을 흡수한다 (사용자에게 안내로 끝나는 케이스라 재시도/DLQ 대상 아님).
      * MissingChatIdException도 같은 이유로 흡수-> chatId 자체가 없으면 안내 메시지를 보낼
-     * 곳도 없으니 로그만 남기고 넘어간다.
+     * 곳도 없으니 로그만 남기고 넘어간다. (그 외 예상 밖 예외는 안 잡고 던져서 재시도→DLQ로 감)
      */
     private Optional<Long> resolveLinkedUserId(String chatId, BotType botType) {
         try {

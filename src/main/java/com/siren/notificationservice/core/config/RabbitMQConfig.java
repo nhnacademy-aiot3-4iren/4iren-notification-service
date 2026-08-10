@@ -1,11 +1,16 @@
 package com.siren.notificationservice.core.config;
 
+import com.siren.notificationservice.core.dlq.service.DlqRecoverer;
 import org.springframework.amqp.core.*;
 
+import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,6 +36,10 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.queue.alert-digest-flush}")      private String alertDigestFlushQueueName;
     @Value("${rabbitmq.routing-key.alert-digest-flush}") private String alertDigestFlushRoutingKey;
     @Value("${rabbitmq.alert-digest.ttl-ms}")           private long alertDigestTtlMs;
+
+    @Value("${rabbitmq.exchange.dlx}") private String dlxExchangeName;
+    @Value("${rabbitmq.queue.dlq}") private String dlqQueueName;
+    @Value("${rabbitmq.routing-key.dlq}") private String dlqRoutingKey;
 
     /**
      * @return JSON - DTO 변환기 (RabbitTemplate과 리스너 컨테이너에 자동 적용됨)
@@ -82,9 +91,6 @@ public class RabbitMQConfig {
 
     /**
      * telegramInboundQueue를 telegramEventsExchange의 telegram inbound 라우팅 키에 바인딩한다.
-     * @param telegramInboundQueue 텔레그램 인바운드 큐
-     * @param telegramEventsExchange 텔레그램 인바운드 익스체인지
-     * @return 큐-익스체인지 바인딩
      */
     @Bean
     public Binding telegramInboundBinding(Queue telegramInboundQueue, DirectExchange telegramEventsExchange) {
@@ -93,9 +99,6 @@ public class RabbitMQConfig {
 
     /**
      * feedbackProcessingQueue를 notificationInternalExchange()의 feedbackProcessingRoutingKey에 바인딩한다.
-     * @param feedbackProcessingQueue 피드백 처리 큐
-     * @param notificationInternalExchange notification 내부 익스체인지
-     * @return 큐-익스체인지 바인딩
      */
     @Bean
     public Binding feedbackProcessingBinding(Queue feedbackProcessingQueue, TopicExchange notificationInternalExchange) {
@@ -104,7 +107,6 @@ public class RabbitMQConfig {
 
     /**
      * Processing/RuleEngine이 발행하는 AlertEvent용 익스체인지
-     * @return alert-events 익스체인지
      */
     @Bean
     public TopicExchange alertEventsExchange() {
@@ -187,4 +189,32 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(alertDigestFlushQueue).to(alertDigestDlxExchange).with(alertDigestFlushRoutingKey);
     }
 
+
+    // DLQ
+    @Bean
+    public DirectExchange dlxExchange() {return new DirectExchange(dlxExchangeName);}
+
+    @Bean
+    public Queue dlq() {return new Queue(dlqQueueName, true);}
+
+    @Bean
+    public Binding dlqBinding(Queue dlq, DirectExchange dlxExchange) {
+        return BindingBuilder.bind(dlq).to(dlxExchange).with(dlqRoutingKey);
+    }
+
+    // urgent 전용 팩토리 (나머지는 프로퍼티를 따라가게)
+    @Bean
+    public SimpleRabbitListenerContainerFactory urgentContainerFactory(
+            SimpleRabbitListenerContainerFactoryConfigurer configurer,
+            ConnectionFactory connectionFactory, DlqRecoverer dlqRecoverer) {
+
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+
+        configurer.configure(factory, connectionFactory);
+
+        factory.setDefaultRequeueRejected(false);
+        factory.setAdviceChain(RetryInterceptorBuilder.stateless()
+                .maxAttempts(2).backOffOptions(500, 2.0, 2000).recoverer(dlqRecoverer).build());
+        return factory;
+    }
 }

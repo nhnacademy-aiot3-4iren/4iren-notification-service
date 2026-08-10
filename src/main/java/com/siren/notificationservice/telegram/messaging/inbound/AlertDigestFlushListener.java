@@ -38,24 +38,21 @@ public class AlertDigestFlushListener {
     // 이 유저 3분 지나서 메세지 발송하는 메서드
     @RabbitListener(queues = "#{@alertDigestFlushQueue.name}")
     public void flush(AlertDigestFlushMessage event) {
-        try{
-            Long userId = event.userId(); // 유저추출
 
-            List<AlertDigestBufferEntry> entries = alertDigestBufferService.drain(userId); // redis에 저장됐던 것들 정리하고 추출
-            if(entries.isEmpty())return; // 비어있음 -> 종료 (메시지 안보냄)
+        Long userId = event.userId(); // 유저추출
 
-            List<AlertDigestBufferEntry> distinct = duplicationDelByEventId(entries); // 이벤트 아이디 중복제거
-            List<TelegramSubscription> subscriptions =
-                    telegramSubscriptionService.findActiveSubscriptions(List.of(userId)); // 해당 유저가 구독한 봇 정보 (2개 있을 수 있으니)
-            if(subscriptions.isEmpty())return; // 없으면 종료
+        List<AlertDigestBufferEntry> entries = alertDigestBufferService.drain(userId); // redis에 저장됐던 것들 정리하고 추출
+        if (entries.isEmpty()) return; // 비어있음 -> 종료 (메시지 안보냄)
 
-            String digestMessage = alertMessageFormatter.formatDigest(distinct); // 하나로 합침 (방 별로 그룹핑해서)
+        List<AlertDigestBufferEntry> distinct = duplicationDelByEventId(entries); // 이벤트 아이디 중복제거
+        List<TelegramSubscription> subscriptions =
+                telegramSubscriptionService.findActiveSubscriptions(List.of(userId)); // 해당 유저가 구독한 봇 정보 (2개 있을 수 있으니)
+        if (subscriptions.isEmpty()) return; // 없으면 종료
 
-            sendAndRecordDigest(subscriptions, distinct, digestMessage);// 전송
+        String digestMessage = alertMessageFormatter.formatDigest(distinct); // 하나로 합침 (방 별로 그룹핑해서)
 
-        } catch (Exception e) {
-            log.warn("[AlertDigestFlushListener] 다이제스트 발송 실패 (userId={})", event.userId(), e);
-        }
+        sendAndRecordDigest(subscriptions, distinct, digestMessage);// 전송
+
     }
 
     private List<AlertDigestBufferEntry> duplicationDelByEventId(List<AlertDigestBufferEntry> entries) {
@@ -79,14 +76,14 @@ public class AlertDigestFlushListener {
         // alert history 저장로직
         List<AlertHistory> histories = new ArrayList<>();
 
-        for(AlertDigestBufferEntry entry : entries) {
+        for (AlertDigestBufferEntry entry : entries) {
             AlertEvent event = entry.event();
 
             Set<AlertHistoryKey> alreadySent = alertHistoryService.findAlreadySentKeys(event.eventId());
             String eventSummary = alertMessageFormatter.format(event, entry.roomName());
 
             for (TelegramSubscription s : subscriptions) {
-                if(alreadySent.contains(new AlertHistoryKey(s.getUserId(), s.getBotType()))) continue;
+                if (alreadySent.contains(new AlertHistoryKey(s.getUserId(), s.getBotType()))) continue;
 
                 histories.add(AlertHistory.builder()
                         .roomId(event.roomId())

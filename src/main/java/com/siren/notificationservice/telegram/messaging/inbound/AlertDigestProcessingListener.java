@@ -20,10 +20,6 @@ public class AlertDigestProcessingListener {
      */
     @RabbitListener(queues = "#{@alertDigestQueue.name}")
     public void handle(AlertEvent event) {
-        try {
-            alertDispatchService.dispatchDigest(event);
-        } catch (Exception e) {
-            log.error("[AlertDigestProcessingListener] 비긴급 알림 처리 실패, 데이터 유실 가능 (event={})", event, e);
-        }
+        alertDispatchService.dispatchDigest(event);
     }
 }
