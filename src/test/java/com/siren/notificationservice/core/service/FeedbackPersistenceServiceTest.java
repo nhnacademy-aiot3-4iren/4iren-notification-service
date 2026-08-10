@@ -7,6 +7,9 @@ import com.siren.notificationservice.core.dto.response.RoomEnvironmentReadingRes
 import com.siren.notificationservice.core.entity.table.OutsideWeatherSnapshot;
 import com.siren.notificationservice.core.entity.table.RoomEnvironmentSnapshot;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
+import com.siren.notificationservice.core.service.basic_service.FeedbackLogService;
+import com.siren.notificationservice.core.service.basic_service.OutsideWeatherSnapshotService;
+import com.siren.notificationservice.core.service.basic_service.RoomEnvironmentSnapshotService;
 import com.siren.notificationservice.core.service.cache.RoomWeatherRegionCacheService;
 import com.siren.notificationservice.telegram.dto.event.FeedbackProcessingEvent;
 import org.junit.jupiter.api.Test;

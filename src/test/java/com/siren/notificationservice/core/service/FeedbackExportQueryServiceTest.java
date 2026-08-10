@@ -10,6 +10,10 @@ import com.siren.notificationservice.core.entity.table.FeedbackScore;
 import com.siren.notificationservice.core.entity.table.OutsideWeatherSnapshot;
 import com.siren.notificationservice.core.entity.table.RoomEnvironmentReading;
 import com.siren.notificationservice.core.entity.table.RoomEnvironmentSnapshot;
+import com.siren.notificationservice.core.service.basic_service.FeedbackLogService;
+import com.siren.notificationservice.core.service.basic_service.FeedbackScoreService;
+import com.siren.notificationservice.core.service.basic_service.OutsideWeatherSnapshotService;
+import com.siren.notificationservice.core.service.basic_service.RoomEnvironmentReadingService;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

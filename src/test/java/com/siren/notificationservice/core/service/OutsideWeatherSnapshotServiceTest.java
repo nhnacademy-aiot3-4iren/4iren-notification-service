@@ -3,6 +3,7 @@ package com.siren.notificationservice.core.service;
 import com.siren.notificationservice.core.entity.table.OutsideWeatherSnapshot;
 import com.siren.notificationservice.core.exception.OutsideWeatherSnapshotAlreadyExistsException;
 import com.siren.notificationservice.core.repository.OutsideWeatherSnapshotRepository;
+import com.siren.notificationservice.core.service.basic_service.OutsideWeatherSnapshotService;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

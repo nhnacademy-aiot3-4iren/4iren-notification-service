@@ -26,7 +26,7 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TelegramSubscriptionService {
+public class TelegramInboundSubService {
     private final TelegramSubscriptionRepository telegramSubscriptionRepository;
 
     /**
@@ -37,8 +37,6 @@ public class TelegramSubscriptionService {
      */
     public void handleValidStart(TelegramInboundEvent event, Long userId) {
         String chatId = event.chatId();
-        // DB 컬럼(DATETIME)은 초 단위 정밀도. 나노초까지 있는 값을 그대로 저장하면
-        // 나중에 다시 읽어온 값과 비교할 때 어긋날 수 있어 저장 전에 초 단위로 자름
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).truncatedTo(ChronoUnit.SECONDS);
 
         // 연동이 최초인지, 재연동인지 판단
@@ -74,7 +72,7 @@ public class TelegramSubscriptionService {
                 telegramSubscriptionRepository.findByChatIdAndBotType(chatId, event.botType());
 
         if (ChatMemberBanned.STATUS.equals(newStatus)) { //사용자가 봇 차단
-            telegramSubscription.ifPresent(TelegramSubscription::block);
+            telegramSubscription.ifPresent(TelegramSubscription::block); // Transaction 쓰기 가능해야됨
         } else if (ChatMemberMember.STATUS.equals(newStatus)) { //사용자가 봇 차단 해제
             telegramSubscription.ifPresent(TelegramSubscription::unblock);
         }

@@ -9,7 +9,7 @@ import com.siren.notificationservice.telegram.callback.handler.CallbackRouteDisp
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
 import com.siren.notificationservice.telegram.service.TelegramMessageService;
-import com.siren.notificationservice.telegram.service.TelegramSubscriptionService;
+import com.siren.notificationservice.telegram.service.TelegramInboundSubService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -30,7 +30,7 @@ import java.util.Optional;
 public class TelegramInboundListener {
 
     private final TelegramLinkTokenService telegramLinkTokenService;
-    private final TelegramSubscriptionService telegramSubscriptionService;
+    private final TelegramInboundSubService telegramInboundSubService;
     private final IntentClassificationAgent intentClassificationAgent;
     private final TelegramMessageService telegramMessageService;
     private final CallbackRouteDispatcher callbackRouteDispatcher;
@@ -48,7 +48,7 @@ public class TelegramInboundListener {
                 && update.getMessage().getText().startsWith("/start")) {
             handleStartCommand(event);
         } else if (update.hasMyChatMember()) { // 봇 자신의 채팅방 소속 상태나 권한이 변경되었을때
-            telegramSubscriptionService.handleBlockedBot(event);
+            telegramInboundSubService.handleBlockedBot(event);
         } else if (update.hasMessage() && update.getMessage().hasText()) {
             handleIntentFreeText(event);
         } else if (update.hasMessage()) {
@@ -82,7 +82,7 @@ public class TelegramInboundListener {
             return;
         }
 
-        telegramSubscriptionService.handleValidStart(event, userId.get()); //연동 로직체크
+        telegramInboundSubService.handleValidStart(event, userId.get()); //연동 로직체크
         telegramMessageService.sendLinkSuccessMessage(event.chatId(), event.botType());// 연동 성공 메세지
     }
 

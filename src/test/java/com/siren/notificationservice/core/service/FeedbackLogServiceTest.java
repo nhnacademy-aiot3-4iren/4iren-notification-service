@@ -3,6 +3,8 @@ package com.siren.notificationservice.core.service;
 import com.siren.notificationservice.core.entity.domain.SensorType;
 import com.siren.notificationservice.core.entity.table.FeedbackLog;
 import com.siren.notificationservice.core.repository.FeedbackLogRepository;
+import com.siren.notificationservice.core.service.basic_service.FeedbackLogService;
+import com.siren.notificationservice.core.service.basic_service.FeedbackScoreService;
 import com.siren.notificationservice.telegram.dto.feedback.FeedbackExtractionResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageRequest;

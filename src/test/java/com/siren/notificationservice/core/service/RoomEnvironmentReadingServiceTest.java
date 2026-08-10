@@ -4,6 +4,7 @@ import com.siren.notificationservice.core.entity.domain.EnvironmentMetricType;
 import com.siren.notificationservice.core.entity.domain.RoomEnvironmentReadingId;
 import com.siren.notificationservice.core.entity.table.RoomEnvironmentReading;
 import com.siren.notificationservice.core.repository.RoomEnvironmentReadingRepository;
+import com.siren.notificationservice.core.service.basic_service.RoomEnvironmentReadingService;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

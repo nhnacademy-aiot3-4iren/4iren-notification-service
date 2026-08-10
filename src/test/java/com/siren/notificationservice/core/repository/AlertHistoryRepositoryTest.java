@@ -32,6 +32,7 @@ class AlertHistoryRepositoryTest {
                 .roomId(7L)
                 .botType(BotType.ADMIN_BOT)
                 .alertType(AlertType.SENSOR_ANOMALY)
+                .eventId("evt-1")
                 .message("센서 이상 감지")
                 .sendAt(ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS))
                 .userId(1L)
