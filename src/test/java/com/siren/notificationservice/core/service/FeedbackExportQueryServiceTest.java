@@ -51,7 +51,7 @@ class FeedbackExportQueryServiceTest {
                 .weatherSnapshotId(200L).nx(60).ny(127).windowStart(ZonedDateTime.now()).build();
         FeedbackLog log = FeedbackLog.builder()
                 .feedbackLogId(1L).roomId(7L).snapshot(snapshot).outsideWeatherSnapshot(weather)
-                .rawText("더워요").createdAt(ZonedDateTime.now()).userId(1L).build();
+                .rawText("더워요").createdAt(ZonedDateTime.now()).userId(1L).delayed(false).build();
         FeedbackScore score = FeedbackScore.builder()
                 .id(FeedbackScoreId.builder().feedbackLogId(1L).sensorType(SensorType.TEMPERATURE).build())
                 .score(1).build();
@@ -77,7 +77,7 @@ class FeedbackExportQueryServiceTest {
     @Test
     void fetchLeavesReadingsAndWeatherEmptyWhenLogHasNoSnapshot() {
         FeedbackLog log = FeedbackLog.builder()
-                .feedbackLogId(1L).roomId(7L).rawText("더워요").createdAt(ZonedDateTime.now()).userId(1L).build();
+                .feedbackLogId(1L).roomId(7L).rawText("더워요").createdAt(ZonedDateTime.now()).delayed(false).userId(1L).build();
 
         when(feedbackLogService.getFeedbackLogs(0L, 10)).thenReturn(List.of(log));
         when(feedbackScoreService.getScoresByFeedbackLogIdIn(List.of(1L))).thenReturn(List.of());
