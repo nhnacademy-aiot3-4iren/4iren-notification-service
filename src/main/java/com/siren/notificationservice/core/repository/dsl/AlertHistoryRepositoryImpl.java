@@ -4,6 +4,8 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.siren.notificationservice.core.dto.request.AlertHistorySearchCondition;
+import com.siren.notificationservice.core.entity.domain.AlertType;
+import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.table.AlertHistory;
 import com.siren.notificationservice.core.entity.table.QAlertHistory;
 import com.siren.notificationservice.core.repository.AlertHistoryRepositoryCustom;
@@ -30,9 +32,10 @@ public class AlertHistoryRepositoryImpl implements AlertHistoryRepositoryCustom 
 
         BooleanBuilder bb = new BooleanBuilder();
         bb.and(q.userId.eq(userId));
+
         if (filter.roomId() != null) bb.and(q.roomId.eq(filter.roomId()));
-        if (filter.botType() != null) bb.and(q.botType.eq(filter.botType()));
-        if (filter.alertType() != null) bb.and(q.alertType.eq(filter.alertType()));
+        if (filter.botType() != null) bb.and(q.botType.eq(BotType.valueOf(filter.botType())));
+        if (filter.alertType() != null) bb.and(q.alertType.eq(AlertType.valueOf(filter.alertType())));
         if (filter.from() != null) bb.and(q.sendAt.goe(filter.from().atStartOfDay(ZONE)));
         if (filter.to() != null) bb.and(q.sendAt.lt(filter.to().plusDays(1).atStartOfDay(ZONE)));
 

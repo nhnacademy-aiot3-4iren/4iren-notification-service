@@ -1,9 +1,11 @@
 package com.siren.notificationservice.core.service.basic_service;
 
+import com.siren.notificationservice.core.client.CoreApiClient;
 import com.siren.notificationservice.core.dto.AlertHistoryKey;
 import com.siren.notificationservice.core.dto.request.AlertHistorySearchCondition;
 import com.siren.notificationservice.core.dto.response.AlertHistoryFilterOptionsResponse;
 import com.siren.notificationservice.core.dto.response.AlertHistoryResponse;
+import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import com.siren.notificationservice.core.entity.domain.AlertType;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.table.AlertHistory;
@@ -23,6 +25,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,7 +34,8 @@ class AlertHistoryServiceTest {
 
     private final AlertHistoryRepository alertHistoryRepository = mock(AlertHistoryRepository.class);
     private final TelegramSubscriptionRepository telegramSubscriptionRepository = mock(TelegramSubscriptionRepository.class);
-    private final AlertHistoryService alertHistoryService = new AlertHistoryService(alertHistoryRepository, telegramSubscriptionRepository);
+    private final CoreApiClient coreApiClient = mock(CoreApiClient.class);
+    private final AlertHistoryService alertHistoryService = new AlertHistoryService(alertHistoryRepository, telegramSubscriptionRepository, coreApiClient);
 
     private AlertHistory history(Long id, Long userId, BotType botType, String eventId) {
         return AlertHistory.builder()
@@ -108,10 +112,45 @@ class AlertHistoryServiceTest {
                 .thenReturn(List.of(BotType.ADMIN_BOT, BotType.USER_BOT));
         when(alertHistoryRepository.findAlertTypesByUserId(100L))
                 .thenReturn(List.of(AlertType.SENSOR_ANOMALY, AlertType.VENTILATION_RECOMMEND));
+        when(coreApiClient.getRoomSubscriptions(100L)).thenReturn(new UserRoomSubResponse(100L, List.of(
+                new UserRoomSubResponse.RoomSubResponse(7L, "302호", true),
+                new UserRoomSubResponse.RoomSubResponse(9L, "강의실 A", false)
+        )));
 
         AlertHistoryFilterOptionsResponse options = alertHistoryService.getFilterOptions(100L);
 
         assertThat(options.botTypeList()).containsExactly("ADMIN_BOT", "USER_BOT");
         assertThat(options.alertTypeList()).containsExactly("SENSOR_ANOMALY", "VENTILATION_RECOMMEND");
+        assertThat(options.rooms())
+                .extracting(AlertHistoryFilterOptionsResponse.RoomOption::roomId, AlertHistoryFilterOptionsResponse.RoomOption::roomName)
+                .containsExactly(tuple(7L, "302호"), tuple(9L, "강의실 A"));
+    }
+
+    @Test
+    void getFilterOptionsReturnsEmptyRoomsWhenCoreUnavailable() {
+        when(telegramSubscriptionRepository.findActiveBotTypesByUserId(100L))
+                .thenReturn(List.of(BotType.ADMIN_BOT));
+        when(alertHistoryRepository.findAlertTypesByUserId(100L))
+                .thenReturn(List.of(AlertType.SENSOR_ANOMALY));
+        when(coreApiClient.getRoomSubscriptions(100L)).thenThrow(new RuntimeException("core down"));
+
+        AlertHistoryFilterOptionsResponse options = alertHistoryService.getFilterOptions(100L);
+
+        assertThat(options.botTypeList()).containsExactly("ADMIN_BOT");
+        assertThat(options.alertTypeList()).containsExactly("SENSOR_ANOMALY");
+        assertThat(options.rooms()).isEmpty();
+    }
+
+    @Test
+    void getFilterOptionsReturnsEmptyRoomsWhenRoomSubInfoNull() {
+        when(telegramSubscriptionRepository.findActiveBotTypesByUserId(100L))
+                .thenReturn(List.of(BotType.ADMIN_BOT));
+        when(alertHistoryRepository.findAlertTypesByUserId(100L))
+                .thenReturn(List.of(AlertType.SENSOR_ANOMALY));
+        when(coreApiClient.getRoomSubscriptions(100L)).thenReturn(new UserRoomSubResponse(100L, null));
+
+        AlertHistoryFilterOptionsResponse options = alertHistoryService.getFilterOptions(100L);
+
+        assertThat(options.rooms()).isEmpty();
     }
 }

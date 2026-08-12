@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -39,6 +40,7 @@ class AlertHistoryControllerTest {
     AlertHistoryService alertHistoryService;
 
     private static final long USER_ID = 42L;
+    private static final String USER_ROLE = "ADMIN";
 
     private AlertHistoryResponse sampleResponse() {
         return new AlertHistoryResponse(
@@ -63,7 +65,8 @@ class AlertHistoryControllerTest {
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/notification/alert-histories")
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].alertHistoryId").value(7))
                 .andExpect(jsonPath("$.content[0].roomId").value(101))
@@ -84,7 +87,8 @@ class AlertHistoryControllerTest {
                 .thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/notification/alert-histories")
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
@@ -105,6 +109,7 @@ class AlertHistoryControllerTest {
 
         mockMvc.perform(get("/api/notification/alert-histories")
                         .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE)
                         .param("page", "2")
                         .param("size", "5"))
                 .andExpect(status().isOk());
@@ -124,6 +129,7 @@ class AlertHistoryControllerTest {
 
         mockMvc.perform(get("/api/notification/alert-histories")
                         .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE)
                         .param("alertType", "SENSOR_ANOMALY")
                         .param("roomId", "101"))
                 .andExpect(status().isOk());
@@ -132,7 +138,7 @@ class AlertHistoryControllerTest {
         verify(alertHistoryService).getAlertHistoryByUserId(eq(USER_ID), condCaptor.capture(), any(Pageable.class));
 
         AlertHistorySearchCondition cond = condCaptor.getValue();
-        assertThat(cond.alertType().name()).isEqualTo("SENSOR_ANOMALY");
+        assertThat(cond.alertType()).isEqualTo("SENSOR_ANOMALY");
         assertThat(cond.roomId()).isEqualTo(101L);
     }
 
@@ -141,14 +147,20 @@ class AlertHistoryControllerTest {
     @Test
     void getFilterOptions_returnsConnectedBotsAndReceivedAlertTypes() throws Exception {
         when(alertHistoryService.getFilterOptions(USER_ID))
-                .thenReturn(new AlertHistoryFilterOptionsResponse(List.of("ADMIN_BOT", "USER_BOT"), List.of("SENSOR_ANOMALY")));
+                .thenReturn(new AlertHistoryFilterOptionsResponse(
+                        List.of("ADMIN_BOT", "USER_BOT"),
+                        List.of("SENSOR_ANOMALY"),
+                        List.of(new AlertHistoryFilterOptionsResponse.RoomOption(7L, "302호"))));
 
         mockMvc.perform(get("/api/notification/alert-histories/filter-options")
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.botTypeList[0]").value("ADMIN_BOT"))
                 .andExpect(jsonPath("$.botTypeList[1]").value("USER_BOT"))
-                .andExpect(jsonPath("$.alertTypeList[0]").value("SENSOR_ANOMALY"));
+                .andExpect(jsonPath("$.alertTypeList[0]").value("SENSOR_ANOMALY"))
+                .andExpect(jsonPath("$.rooms[0].roomId").value(7))
+                .andExpect(jsonPath("$.rooms[0].roomName").value("302호"));
     }
 
     // --- GET /api/notification/alert-histories/{alert-history-id} ---
@@ -158,7 +170,8 @@ class AlertHistoryControllerTest {
         when(alertHistoryService.getAlertHistoryById(7L, USER_ID)).thenReturn(sampleResponse());
 
         mockMvc.perform(get("/api/notification/alert-histories/{id}", 7L)
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.alertHistoryId").value(7))
                 .andExpect(jsonPath("$.roomId").value(101))
@@ -172,7 +185,8 @@ class AlertHistoryControllerTest {
         when(alertHistoryService.getAlertHistoryById(7L, USER_ID)).thenReturn(sampleResponse());
 
         mockMvc.perform(get("/api/notification/alert-histories/{id}", 7L)
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isOk());
 
         verify(alertHistoryService).getAlertHistoryById(7L, USER_ID);
@@ -186,15 +200,61 @@ class AlertHistoryControllerTest {
                 .thenThrow(new NotFoundAlertHistoryException(7L));
 
         mockMvc.perform(get("/api/notification/alert-histories/{id}", 7L)
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
     }
 
     @Test
     void getAllAlertHistory_whenUserIdHeaderMissing_returns400() throws Exception {
-        mockMvc.perform(get("/api/notification/alert-histories"))
+        mockMvc.perform(get("/api/notification/alert-histories")
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void getAllAlertHistory_whenInvalidFilterValue_returns400() throws Exception {
+        when(alertHistoryService.getAlertHistoryByUserId(eq(USER_ID), any(AlertHistorySearchCondition.class), any(Pageable.class)))
+                .thenThrow(new IllegalArgumentException("No enum constant BotType.BAD"));
+
+        mockMvc.perform(get("/api/notification/alert-histories")
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE)
+                        .param("botType", "BAD"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    // --- 역할 경계 (@RequireRole({OWNER, ADMIN})) ---
+
+    @Test
+    void getAllAlertHistory_whenNormalRole_returns403AndServiceNotCalled() throws Exception {
+        mockMvc.perform(get("/api/notification/alert-histories")
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", "NORMAL"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(alertHistoryService);
+    }
+
+    @Test
+    void getAllAlertHistory_whenRoleHeaderMissing_returns403() throws Exception {
+        mockMvc.perform(get("/api/notification/alert-histories")
+                        .header("X-USER-ID", USER_ID))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(alertHistoryService);
+    }
+
+    @Test
+    void getAllAlertHistory_whenUnknownRole_returns403() throws Exception {
+        mockMvc.perform(get("/api/notification/alert-histories")
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", "SUPERUSER"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(alertHistoryService);
     }
 }

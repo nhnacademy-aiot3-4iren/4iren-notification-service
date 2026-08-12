@@ -36,6 +36,35 @@ public class GlobalExceptionHandler {
                         "필수 요청 헤더가 없습니다: " + e.getHeaderName()));
     }
 
+    /**
+     * 요청 Role이 허용되지 않을 때 403으로 응답한다.
+     */
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(HttpStatus.FORBIDDEN.value(), e.getMessage()));
+    }
+
+    /**
+     * X-USER-ROLE 헤더가 없거나 알 수 없는 값일 때. 상세는 로깅하고 응답은 제네릭 403으로 내린다.
+     */
+    @ExceptionHandler(InvalidRoleException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRole(InvalidRoleException e) {
+        log.warn("잘못된 Role 요청: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(HttpStatus.FORBIDDEN.value(), "접근 권한이 없습니다."));
+    }
+
+    /**
+     * 잘못된 요청 파라미터(예: 알 수 없는 botType/alertType 값으로 enum 변환 실패)일 때 400으로 응답한다.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
+        log.warn("잘못된 요청 파라미터: {}", e.getMessage());
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), "잘못된 요청 파라미터입니다."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
         log.error("처리되지 않은 예외 발생", e);

@@ -1,9 +1,11 @@
 package com.siren.notificationservice.core.service.basic_service;
 
+import com.siren.notificationservice.core.client.CoreApiClient;
 import com.siren.notificationservice.core.dto.AlertHistoryKey;
 import com.siren.notificationservice.core.dto.request.AlertHistorySearchCondition;
 import com.siren.notificationservice.core.dto.response.AlertHistoryFilterOptionsResponse;
 import com.siren.notificationservice.core.dto.response.AlertHistoryResponse;
+import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import com.siren.notificationservice.core.entity.table.AlertHistory;
 import com.siren.notificationservice.core.exception.NotFoundAlertHistoryException;
 import com.siren.notificationservice.core.repository.AlertHistoryRepository;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 public class AlertHistoryService {
     private final AlertHistoryRepository alertHistoryRepository;
     private final TelegramSubscriptionRepository telegramSubscriptionRepository;
+    private final CoreApiClient coreApiClient;
 
     /**
      * 이 유저에게 발송된 알림 이력을 조회한다. 한 룸에 관리자가 여러 명이어도 각자 자기한테 온 것만 본다.
@@ -94,8 +97,27 @@ public class AlertHistoryService {
 
         return new AlertHistoryFilterOptionsResponse(
                 botTypes,
-                alertTypes
+                alertTypes,
+                resolveSubscribedRooms(userId)
         );
+    }
+
+    /**
+     * 이 유저가 구독한 강의실(id+이름)을 방 필터 옵션으로 조회한다. Core 실패 시 방 목록만 비운다.
+     */
+    private List<AlertHistoryFilterOptionsResponse.RoomOption> resolveSubscribedRooms(Long userId) {
+        try {
+            UserRoomSubResponse subs = coreApiClient.getRoomSubscriptions(userId);
+            if (subs == null || subs.roomSubInfo() == null) {
+                return List.of();
+            }
+            return subs.roomSubInfo().stream()
+                    .map(r -> new AlertHistoryFilterOptionsResponse.RoomOption(r.roomId(), r.roomName()))
+                    .toList();
+        } catch (Exception e) {
+            log.warn("구독 강의실 조회 실패 - 방 필터 옵션 생략 userId={}", userId, e);
+            return List.of();
+        }
     }
 
 

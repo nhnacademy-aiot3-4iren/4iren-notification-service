@@ -1,6 +1,8 @@
 package com.siren.notificationservice.telegram.controller;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.security.RequireRole;
+import com.siren.notificationservice.core.security.Role;
 import com.siren.notificationservice.telegram.controller.webhook.doc.DeepLinkControllerDoc;
 import com.siren.notificationservice.telegram.dto.response.LinkStatusResponse;
 import com.siren.notificationservice.telegram.dto.response.LinkTokenResponse;
@@ -22,6 +24,7 @@ public class DeepLinkController implements DeepLinkControllerDoc {
      * AdminBot에 연결하기 위한 DeepLink 제공
      * Gateway측에서 Admin role만 통과시켜야함
      */
+    @RequireRole({Role.OWNER, Role.ADMIN})
     @PostMapping("/telegram/admin/link-token")
     public ResponseEntity<LinkTokenResponse> linkAdminToken(
             @RequestHeader("X-USER-ID") Long userId) {
@@ -32,6 +35,7 @@ public class DeepLinkController implements DeepLinkControllerDoc {
     /**
      * MemberBot에 연결하기 위한 DeepLink 제공
      */
+    @RequireRole({Role.OWNER, Role.ADMIN, Role.NORMAL})
     @PostMapping("/telegram/member/link-token")
     public ResponseEntity<LinkTokenResponse> linkMemberToken(
             @RequestHeader("X-USER-ID") Long userId) {
@@ -43,6 +47,7 @@ public class DeepLinkController implements DeepLinkControllerDoc {
      * Admin 봇 연동 여부 조회. 딥링크 토큰 발급 전, 프론트가 "이미 연동되어 있습니다,
      * 재연동하시겠어요?" 확인 다이얼로그를 보여줄지 판단하는 데 쓴다.
      */
+    @RequireRole({Role.OWNER, Role.ADMIN})
     @GetMapping("/telegram/admin/link-status")
     public ResponseEntity<LinkStatusResponse> getAdminLinkStatus(
             @RequestHeader("X-USER-ID") Long userId) {
@@ -54,6 +59,7 @@ public class DeepLinkController implements DeepLinkControllerDoc {
      * Member 봇 연동 여부 조회. 딥링크 토큰 발급 전, 프론트가 "이미 연동되어 있습니다,
      * 재연동하시겠어요?" 확인 다이얼로그를 보여줄지 판단하는 데 쓴다 .
      */
+    @RequireRole({Role.OWNER, Role.ADMIN, Role.NORMAL})
     @GetMapping("/telegram/member/link-status")
     public ResponseEntity<LinkStatusResponse> getMemberLinkStatus(
             @RequestHeader("X-USER-ID") Long userId) {

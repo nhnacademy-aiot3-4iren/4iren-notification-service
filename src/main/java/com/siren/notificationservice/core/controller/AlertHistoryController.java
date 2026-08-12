@@ -5,6 +5,8 @@ import com.siren.notificationservice.core.dto.request.AlertHistorySearchConditio
 import com.siren.notificationservice.core.dto.response.AlertHistoryFilterOptionsResponse;
 import com.siren.notificationservice.core.dto.response.AlertHistoryResponse;
 import com.siren.notificationservice.core.dto.response.PageResponse;
+import com.siren.notificationservice.core.security.RequireRole;
+import com.siren.notificationservice.core.security.Role;
 import com.siren.notificationservice.core.service.basic_service.AlertHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/notification/alert-histories")
 @RequiredArgsConstructor
+@RequireRole({Role.OWNER, Role.ADMIN})
 public class AlertHistoryController implements AlertHistoryControllerDoc {
     private final AlertHistoryService alertHistoryService;
 
