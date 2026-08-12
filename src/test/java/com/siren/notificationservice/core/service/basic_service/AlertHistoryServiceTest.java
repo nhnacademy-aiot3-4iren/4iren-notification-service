@@ -1,12 +1,15 @@
 package com.siren.notificationservice.core.service.basic_service;
 
 import com.siren.notificationservice.core.dto.AlertHistoryKey;
+import com.siren.notificationservice.core.dto.request.AlertHistorySearchCondition;
+import com.siren.notificationservice.core.dto.response.AlertHistoryFilterOptionsResponse;
 import com.siren.notificationservice.core.dto.response.AlertHistoryResponse;
 import com.siren.notificationservice.core.entity.domain.AlertType;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.table.AlertHistory;
 import com.siren.notificationservice.core.exception.NotFoundAlertHistoryException;
 import com.siren.notificationservice.core.repository.AlertHistoryRepository;
+import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -27,7 +30,8 @@ import static org.mockito.Mockito.when;
 class AlertHistoryServiceTest {
 
     private final AlertHistoryRepository alertHistoryRepository = mock(AlertHistoryRepository.class);
-    private final AlertHistoryService alertHistoryService = new AlertHistoryService(alertHistoryRepository);
+    private final TelegramSubscriptionRepository telegramSubscriptionRepository = mock(TelegramSubscriptionRepository.class);
+    private final AlertHistoryService alertHistoryService = new AlertHistoryService(alertHistoryRepository, telegramSubscriptionRepository);
 
     private AlertHistory history(Long id, Long userId, BotType botType, String eventId) {
         return AlertHistory.builder()
@@ -45,10 +49,12 @@ class AlertHistoryServiceTest {
     @Test
     void getAlertHistoryByUserIdMapsToResponse() {
         Pageable pageable = PageRequest.of(0, 20);
+        AlertHistorySearchCondition condition = new AlertHistorySearchCondition(null, null, null, null, null);
         Page<AlertHistory> page = new PageImpl<>(List.of(history(1L, 100L, BotType.ADMIN_BOT, "evt-1")), pageable, 1);
-        when(alertHistoryRepository.findByUserId(100L, pageable)).thenReturn(page);
 
-        Page<AlertHistoryResponse> result = alertHistoryService.getAlertHistoryByUserId(100L, pageable);
+        when(alertHistoryRepository.search(100L, condition, pageable)).thenReturn(page);
+
+        Page<AlertHistoryResponse> result = alertHistoryService.getAlertHistoryByUserId(100L, condition, pageable);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).message()).isEqualTo("센서 이상");
@@ -94,5 +100,18 @@ class AlertHistoryServiceTest {
         alertHistoryService.saveAll(histories);
 
         verify(alertHistoryRepository).saveAll(histories);
+    }
+
+    @Test
+    void getFilterOptionsReturnsConnectedBotsAndReceivedAlertTypes() {
+        when(telegramSubscriptionRepository.findActiveBotTypesByUserId(100L))
+                .thenReturn(List.of(BotType.ADMIN_BOT, BotType.USER_BOT));
+        when(alertHistoryRepository.findAlertTypesByUserId(100L))
+                .thenReturn(List.of(AlertType.SENSOR_ANOMALY, AlertType.VENTILATION_RECOMMEND));
+
+        AlertHistoryFilterOptionsResponse options = alertHistoryService.getFilterOptions(100L);
+
+        assertThat(options.botTypeList()).containsExactly("ADMIN_BOT", "USER_BOT");
+        assertThat(options.alertTypeList()).containsExactly("SENSOR_ANOMALY", "VENTILATION_RECOMMEND");
     }
 }

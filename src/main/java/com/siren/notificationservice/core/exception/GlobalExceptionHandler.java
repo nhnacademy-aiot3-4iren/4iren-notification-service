@@ -4,17 +4,37 @@ import com.siren.notificationservice.core.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
- * REST 컨트롤러(웹훅/딥링크)에서 예상 못 한 예외가 나면 500으로 응답하고 스택트레이스를 로깅한다.
- * 도메인 예외(MissingChatIdException 등)는 전부 RabbitMQ 리스너 안에서만 던져지고 그 안에서
- * 잡히기 때문에 여기까지 올라오지 않는다 -> 그래서 타입별로 나눌 핸들러 없이 이거 하나로 충분하다.
+ * REST 컨트롤러에서 올라오는 예외를 상태 코드로 매핑한다. 타입별 핸들러가 없으면 catch-all이
+ * 500으로 응답하고 스택트레이스를 로깅한다. (웹훅/딥링크의 도메인 예외는 대부분 RabbitMQ
+ * 리스너 안에서 잡혀 여기까지 올라오지 않는다.)
  */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    /**
+     * 조회 대상이 없거나 요청자 소유가 아닐 때. 존재 여부를 노출하지 않도록 404로 응답한다.
+     */
+    @ExceptionHandler(NotFoundAlertHistoryException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundAlertHistoryException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+    }
+
+    /**
+     * X-USER-ID 등 필수 요청 헤더가 빠졌을 때 400으로 응답한다.
+     */
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingHeader(MissingRequestHeaderException e) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(),
+                        "필수 요청 헤더가 없습니다: " + e.getHeaderName()));
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {

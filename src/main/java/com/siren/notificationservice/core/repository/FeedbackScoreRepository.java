@@ -1,7 +1,7 @@
 package com.siren.notificationservice.core.repository;
 
-import com.siren.notificationservice.core.entity.table.FeedbackScore;
 import com.siren.notificationservice.core.entity.domain.FeedbackScoreId;
+import com.siren.notificationservice.core.entity.table.FeedbackScore;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

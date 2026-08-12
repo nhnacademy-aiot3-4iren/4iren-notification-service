@@ -31,7 +31,7 @@
         <spring-cloud.version>2025.0.3</spring-cloud.version>
         <spring-ai.version>1.1.8</spring-ai.version>
         <querydsl.version>5.1.0</querydsl.version>
-        <jacoco.minimum.line.coverage>0.60</jacoco.minimum.line.coverage>
+        <jacoco.minimum.line.coverage>0.80</jacoco.minimum.line.coverage>
     </properties>
     <dependencies>
 <!--        config server-->
@@ -295,6 +295,12 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
+                <configuration>
+                    <!-- QueryDSL이 생성한 Q클래스는 자동생성 코드라 커버리지 대상에서 제외 -->
+                    <excludes>
+                        <exclude>**/entity/**/Q*.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>jacoco-initialize</id>
