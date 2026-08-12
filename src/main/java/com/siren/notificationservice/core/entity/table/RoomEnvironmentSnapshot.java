@@ -1,19 +1,12 @@
 package com.siren.notificationservice.core.entity.table;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 
 /**
  * 강의실의 특정 15분 구간 환경 스냅샷. 실제 측정값(온도/습도/CO2 등)은
@@ -40,4 +33,9 @@ public class RoomEnvironmentSnapshot {
 
     @Column(name = "window_start", nullable = false)
     private ZonedDateTime windowStart;
+
+    @OneToMany(mappedBy = "snapshot", fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private List<RoomEnvironmentReading> readings;
+
 }

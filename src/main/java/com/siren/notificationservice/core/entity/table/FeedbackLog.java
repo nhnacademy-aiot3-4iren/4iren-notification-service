@@ -1,21 +1,12 @@
 package com.siren.notificationservice.core.entity.table;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 
 /**
  * 사용자가 텔레그램으로 남긴 강의실 환경 체감 피드백 한 건. 축별 점수는
@@ -37,6 +28,21 @@ public class FeedbackLog {
 
     @Column(name = "room_id", nullable = false)
     private Long roomId;
+    
+    @Column(name = "raw_text", columnDefinition = "TEXT", nullable = false)
+    private String rawText; // 피드백 원문 보존 (재분류/재학습 대비), 자연어 전용이라 항상 존재
+
+    @Column(name = "created_at", nullable = false)
+    private ZonedDateTime createdAt; // 피드백 제출 시각
+
+    @Column(name = "is_delayed", nullable = false)
+    private boolean delayed; // 자연어에서 지연 제출 신호("아까", "집에 와서" 등)가 감지되면 true
+
+    @Column(name = "experienced_at")
+    private ZonedDateTime experiencedAt; // 사용자가 언급한 구체적 체감 시각(있으면 환경 스냅샷 매칭 기준점), 없으면 NULL
+
+    @Column(name = "user_id", nullable = false)
+    private Long userId; // Account API 소유 유저 id (bare, 로컬 FK 없음)
 
     /**
      * 피드백 시점(정확히는 experiencedAt 또는 createdAt)에 해당하는 환경 스냅샷.
@@ -54,18 +60,9 @@ public class FeedbackLog {
     @JoinColumn(name = "outside_weather_snapshot_id")
     private OutsideWeatherSnapshot outsideWeatherSnapshot;
 
-    @Column(name = "raw_text", columnDefinition = "TEXT", nullable = false)
-    private String rawText; // 피드백 원문 보존 (재분류/재학습 대비), 자연어 전용이라 항상 존재
+    @OneToMany(mappedBy = "feedbackLog", fetch = FetchType.LAZY)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private List<FeedbackScore> scores;
 
-    @Column(name = "created_at", nullable = false)
-    private ZonedDateTime createdAt; // 피드백 제출 시각
 
-    @Column(name = "is_delayed", nullable = false)
-    private boolean delayed; // 자연어에서 지연 제출 신호("아까", "집에 와서" 등)가 감지되면 true
-
-    @Column(name = "experienced_at")
-    private ZonedDateTime experiencedAt; // 사용자가 언급한 구체적 체감 시각(있으면 환경 스냅샷 매칭 기준점), 없으면 NULL
-
-    @Column(name = "user_id", nullable = false)
-    private Long userId; // Account API 소유 유저 id (bare, 로컬 FK 없음)
 }

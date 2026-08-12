@@ -1,6 +1,8 @@
 package com.siren.notificationservice.core.controller;
 
 import com.siren.notificationservice.core.controller.doc.AlertHistoryControllerDoc;
+import com.siren.notificationservice.core.dto.request.AlertHistorySearchCondition;
+import com.siren.notificationservice.core.dto.response.AlertHistoryFilterOptionsResponse;
 import com.siren.notificationservice.core.dto.response.AlertHistoryResponse;
 import com.siren.notificationservice.core.dto.response.PageResponse;
 import com.siren.notificationservice.core.service.basic_service.AlertHistoryService;
@@ -20,9 +22,10 @@ public class AlertHistoryController implements AlertHistoryControllerDoc {
     @GetMapping
     public ResponseEntity<PageResponse<AlertHistoryResponse>> getAllAlertHistory(
             @RequestHeader("X-USER-ID") Long userId,
+            AlertHistorySearchCondition condition,
             @PageableDefault(size = 20, sort = "sendAt", direction = Sort.Direction.DESC) Pageable pageable
     ){
-        return ResponseEntity.ok().body(PageResponse.from(alertHistoryService.getAlertHistoryByUserId(userId, pageable)));
+        return ResponseEntity.ok().body(PageResponse.from(alertHistoryService.getAlertHistoryByUserId(userId,condition, pageable)));
     }
 
     @GetMapping("/{alert-history-id}")
@@ -31,5 +34,12 @@ public class AlertHistoryController implements AlertHistoryControllerDoc {
             @PathVariable("alert-history-id")  Long alertHistoryId
     ){
         return ResponseEntity.ok().body(alertHistoryService.getAlertHistoryById(alertHistoryId, userId));
+    }
+
+    @GetMapping("/filter-options")
+    public ResponseEntity<AlertHistoryFilterOptionsResponse>  getAlertHistoryFilterOptions(
+            @RequestHeader("X-USER-ID") Long userId
+    ){
+        return ResponseEntity.ok(alertHistoryService.getFilterOptions(userId));
     }
 }

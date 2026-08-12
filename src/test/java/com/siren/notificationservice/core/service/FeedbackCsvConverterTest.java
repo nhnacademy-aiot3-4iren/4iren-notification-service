@@ -33,7 +33,7 @@ class FeedbackCsvConverterTest {
         ZonedDateTime experiencedAt = ZonedDateTime.parse("2026-07-20T14:00:00+09:00");
         FeedbackLog log = FeedbackLog.builder()
                 .feedbackLogId(1042L).roomId(7L).rawText("더워요")
-                .createdAt(experiencedAt).experiencedAt(experiencedAt).userId(1L).build();
+                .createdAt(experiencedAt).experiencedAt(experiencedAt).userId(1L).delayed(false).build();
         FeedbackScore score = FeedbackScore.builder()
                 .id(FeedbackScoreId.builder().feedbackLogId(1042L).sensorType(SensorType.TEMPERATURE).build())
                 .score(1).build();
@@ -69,7 +69,7 @@ class FeedbackCsvConverterTest {
     void toCsvSkipsWeatherRowsWhenNoOutsideWeather() {
         FeedbackLog log = FeedbackLog.builder()
                 .feedbackLogId(1L).roomId(7L).rawText("더워요")
-                .createdAt(ZonedDateTime.now()).userId(1L).build();
+                .createdAt(ZonedDateTime.now()).userId(1L).delayed(false).build();
         FeedbackScore score = FeedbackScore.builder()
                 .id(FeedbackScoreId.builder().feedbackLogId(1L).sensorType(SensorType.HUMIDITY).build())
                 .score(-1).build();

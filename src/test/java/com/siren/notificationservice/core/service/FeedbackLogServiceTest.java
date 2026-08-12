@@ -33,6 +33,7 @@ class FeedbackLogServiceTest {
                 .rawText("더워요")
                 .createdAt(ZonedDateTime.now())
                 .userId(1L)
+                .delayed(false)
                 .build();
     }
 

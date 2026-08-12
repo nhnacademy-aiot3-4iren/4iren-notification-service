@@ -1,10 +1,13 @@
 package com.siren.notificationservice.core.service.basic_service;
 
 import com.siren.notificationservice.core.dto.AlertHistoryKey;
+import com.siren.notificationservice.core.dto.request.AlertHistorySearchCondition;
+import com.siren.notificationservice.core.dto.response.AlertHistoryFilterOptionsResponse;
 import com.siren.notificationservice.core.dto.response.AlertHistoryResponse;
 import com.siren.notificationservice.core.entity.table.AlertHistory;
 import com.siren.notificationservice.core.exception.NotFoundAlertHistoryException;
 import com.siren.notificationservice.core.repository.AlertHistoryRepository;
+import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,14 +25,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AlertHistoryService {
     private final AlertHistoryRepository alertHistoryRepository;
+    private final TelegramSubscriptionRepository telegramSubscriptionRepository;
 
     /**
      * 이 유저에게 발송된 알림 이력을 조회한다. 한 룸에 관리자가 여러 명이어도 각자 자기한테 온 것만 본다.
      */
     @Transactional(readOnly = true)
-    public Page<AlertHistoryResponse> getAlertHistoryByUserId(Long userId, Pageable pageable) {
+    public Page<AlertHistoryResponse> getAlertHistoryByUserId(Long userId, AlertHistorySearchCondition filter, Pageable pageable) {
         Objects.requireNonNull(userId, "userId는 null일 수 없습니다.");
-        return alertHistoryRepository.findByUserId(userId, pageable).map(this::toResponse);
+        return alertHistoryRepository.search(userId,filter, pageable).map(this::toResponse);
     }
 
     /**
@@ -76,5 +80,23 @@ public class AlertHistoryService {
                 alertHistory.getSendAt().toLocalDateTime()
         );
     }
+
+    @Transactional(readOnly = true)
+    public AlertHistoryFilterOptionsResponse getFilterOptions(Long userId){
+        List<String> botTypes = telegramSubscriptionRepository.findActiveBotTypesByUserId(userId)
+                .stream()
+                .map(Enum::name)
+                .toList();
+        List<String> alertTypes = alertHistoryRepository.findAlertTypesByUserId(userId)
+                .stream()
+                .map(Enum::name)
+                .toList();
+
+        return new AlertHistoryFilterOptionsResponse(
+                botTypes,
+                alertTypes
+        );
+    }
+
 
 }

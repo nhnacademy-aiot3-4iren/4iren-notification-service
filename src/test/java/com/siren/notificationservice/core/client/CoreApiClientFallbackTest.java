@@ -19,6 +19,13 @@ class CoreApiClientFallbackTest {
     }
 
     @Test
+    void getSubscribersThrowsError() {
+        assertThatThrownBy(() -> fallback.getSubscribers(1L))
+                .isInstanceOf(CoreApiUnavailableException.class)
+                .hasMessageContaining("roomId=1");
+    }
+
+    @Test
     void getRoomSensorsReadingsThrowsError() {
         LocalDateTime requestAt = LocalDateTime.now();
 
