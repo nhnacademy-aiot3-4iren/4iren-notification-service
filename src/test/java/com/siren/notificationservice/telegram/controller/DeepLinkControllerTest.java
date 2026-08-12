@@ -28,7 +28,7 @@ class DeepLinkControllerTest {
         when(telegramLinkTokenService.getDeepLinkUrl(1L, BotType.ADMIN_BOT))
                 .thenReturn("https://t.me/admin_bot?start=abc");
 
-        mockMvc.perform(post("/telegram/admin/link-token").header("X-USER-ID", "1"))
+        mockMvc.perform(post("/telegram/admin/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", "ADMIN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.deepLinkUrl").value("https://t.me/admin_bot?start=abc"))
                 .andExpect(jsonPath("$.expiresInSeconds").value(300));
@@ -39,7 +39,7 @@ class DeepLinkControllerTest {
         when(telegramLinkTokenService.getDeepLinkUrl(1L, BotType.USER_BOT))
                 .thenReturn("https://t.me/member_bot?start=abc");
 
-        mockMvc.perform(post("/telegram/member/link-token").header("X-USER-ID", "1"))
+        mockMvc.perform(post("/telegram/member/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", "NORMAL"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.deepLinkUrl").value("https://t.me/member_bot?start=abc"));
     }
@@ -48,7 +48,7 @@ class DeepLinkControllerTest {
     void getAdminLinkStatusReturnsLinkedTrue() throws Exception {
         when(telegramLinkTokenService.isLinked(1L, BotType.ADMIN_BOT)).thenReturn(true);
 
-        mockMvc.perform(get("/telegram/admin/link-status").header("X-USER-ID", "1"))
+        mockMvc.perform(get("/telegram/admin/link-status").header("X-USER-ID", "1").header("X-USER-ROLE", "ADMIN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.linked").value(true));
     }
@@ -57,7 +57,7 @@ class DeepLinkControllerTest {
     void getMemberLinkStatusReturnsLinkedFalse() throws Exception {
         when(telegramLinkTokenService.isLinked(1L, BotType.USER_BOT)).thenReturn(false);
 
-        mockMvc.perform(get("/telegram/member/link-status").header("X-USER-ID", "1"))
+        mockMvc.perform(get("/telegram/member/link-status").header("X-USER-ID", "1").header("X-USER-ROLE", "NORMAL"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.linked").value(false));
     }

@@ -39,6 +39,7 @@ class AlertHistoryControllerTest {
     AlertHistoryService alertHistoryService;
 
     private static final long USER_ID = 42L;
+    private static final String USER_ROLE = "ADMIN";
 
     private AlertHistoryResponse sampleResponse() {
         return new AlertHistoryResponse(
@@ -63,7 +64,8 @@ class AlertHistoryControllerTest {
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/notification/alert-histories")
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].alertHistoryId").value(7))
                 .andExpect(jsonPath("$.content[0].roomId").value(101))
@@ -84,7 +86,8 @@ class AlertHistoryControllerTest {
                 .thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/notification/alert-histories")
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
@@ -105,6 +108,7 @@ class AlertHistoryControllerTest {
 
         mockMvc.perform(get("/api/notification/alert-histories")
                         .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE)
                         .param("page", "2")
                         .param("size", "5"))
                 .andExpect(status().isOk());
@@ -124,6 +128,7 @@ class AlertHistoryControllerTest {
 
         mockMvc.perform(get("/api/notification/alert-histories")
                         .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE)
                         .param("alertType", "SENSOR_ANOMALY")
                         .param("roomId", "101"))
                 .andExpect(status().isOk());
@@ -144,7 +149,8 @@ class AlertHistoryControllerTest {
                 .thenReturn(new AlertHistoryFilterOptionsResponse(List.of("ADMIN_BOT", "USER_BOT"), List.of("SENSOR_ANOMALY")));
 
         mockMvc.perform(get("/api/notification/alert-histories/filter-options")
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.botTypeList[0]").value("ADMIN_BOT"))
                 .andExpect(jsonPath("$.botTypeList[1]").value("USER_BOT"))
@@ -158,7 +164,8 @@ class AlertHistoryControllerTest {
         when(alertHistoryService.getAlertHistoryById(7L, USER_ID)).thenReturn(sampleResponse());
 
         mockMvc.perform(get("/api/notification/alert-histories/{id}", 7L)
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.alertHistoryId").value(7))
                 .andExpect(jsonPath("$.roomId").value(101))
@@ -172,7 +179,8 @@ class AlertHistoryControllerTest {
         when(alertHistoryService.getAlertHistoryById(7L, USER_ID)).thenReturn(sampleResponse());
 
         mockMvc.perform(get("/api/notification/alert-histories/{id}", 7L)
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isOk());
 
         verify(alertHistoryService).getAlertHistoryById(7L, USER_ID);
@@ -186,14 +194,16 @@ class AlertHistoryControllerTest {
                 .thenThrow(new NotFoundAlertHistoryException(7L));
 
         mockMvc.perform(get("/api/notification/alert-histories/{id}", 7L)
-                        .header("X-USER-ID", USER_ID))
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
     }
 
     @Test
     void getAllAlertHistory_whenUserIdHeaderMissing_returns400() throws Exception {
-        mockMvc.perform(get("/api/notification/alert-histories"))
+        mockMvc.perform(get("/api/notification/alert-histories")
+                        .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
