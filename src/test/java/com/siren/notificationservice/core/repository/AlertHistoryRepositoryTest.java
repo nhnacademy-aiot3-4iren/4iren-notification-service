@@ -97,14 +97,16 @@ class AlertHistoryRepositoryTest {
     }
 
     @Test
-    void searchFiltersByDateRangeInclusiveOfToDay() {
-        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, ZonedDateTime.now(ZONE).minusDays(10), "e-old");
-        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, ZonedDateTime.now(ZONE), "e-new");
+    void searchFiltersByDateRange_fromExcludesOlder_toIncludesToDay() {
+        LocalDate today = LocalDate.now(ZONE); // 한 번만 캡처해 자정 경계 flaky 제거
+        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, today.minusDays(10).atTime(12, 0).atZone(ZONE), "e-old");
+        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, today.atTime(12, 0).atZone(ZONE), "e-today");
+        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, today.plusDays(1).atTime(12, 0).atZone(ZONE), "e-tomorrow");
 
-        // from = 오늘 -> 오늘 것만 (10일 전 것 제외)
+        // from=today(오래된 것 제외) + to=today(다음날 제외, to 당일은 포함) -> today 것만
         Page<AlertHistory> page = alertHistoryRepository.search(
-                100L, new AlertHistorySearchCondition(null, null, null, LocalDate.now(ZONE), null), PageRequest.of(0, 20));
+                100L, new AlertHistorySearchCondition(null, null, null, today, today), PageRequest.of(0, 20));
 
-        assertThat(page.getContent()).extracting(AlertHistory::getEventId).containsExactly("e-new");
+        assertThat(page.getContent()).extracting(AlertHistory::getEventId).containsExactly("e-today");
     }
 }

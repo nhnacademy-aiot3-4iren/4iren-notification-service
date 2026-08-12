@@ -39,7 +39,7 @@ public class AlertHistoryRepositoryImpl implements AlertHistoryRepositoryCustom 
         List<AlertHistory> content = jpaQueryFactory
                 .selectFrom(q)
                 .where(bb)
-                .orderBy(q.sendAt.desc())
+                .orderBy(q.sendAt.desc(), q.alertHistoryId.desc()) // sendAt은 유니크 아님 -> PK로 tie-break해 페이지 경계 안정화
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();

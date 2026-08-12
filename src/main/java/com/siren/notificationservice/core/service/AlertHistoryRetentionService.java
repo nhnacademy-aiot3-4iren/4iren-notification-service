@@ -25,6 +25,12 @@ public class AlertHistoryRetentionService {
                                         PlatformTransactionManager transactionManager,
                                         @Value("${alert-history.retention-days}") int retentionDays,
                                         @Value("${alert-history.retention-batch-size}") int batchSize) {
+        if (retentionDays < 0) {
+            throw new IllegalArgumentException("retentionDays는 음수일 수 없습니다(미래 cutoff로 미만료 데이터 삭제 위험): " + retentionDays);
+        }
+        if (batchSize <= 0) {
+            throw new IllegalArgumentException("batchSize는 1 이상이어야 합니다(0이면 무한 루프): " + batchSize);
+        }
         this.alertHistoryRepository = alertHistoryRepository;
         // 배치마다 독립 트랜잭션을 열려고 TransactionTemplate을 직접 구성한다(서비스에 @Transactional을 걸면
         // 루프 전체가 한 트랜잭션이 돼서 청크 삭제의 의미가 사라짐).

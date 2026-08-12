@@ -31,6 +31,12 @@ public class FeedbackLogRetentionService {
                                        PlatformTransactionManager transactionManager,
                                        @Value("${feedback-log.retention-days}") int retentionDays,
                                        @Value("${feedback-log.retention-batch-size}") int batchSize) {
+        if (retentionDays < 0) {
+            throw new IllegalArgumentException("retentionDays는 음수일 수 없습니다(미래 cutoff로 미만료 데이터 삭제 위험): " + retentionDays);
+        }
+        if (batchSize <= 0) {
+            throw new IllegalArgumentException("batchSize는 1 이상이어야 합니다: " + batchSize);
+        }
         this.feedbackLogRepository = feedbackLogRepository;
         this.roomEnvironmentSnapshotRepository = roomEnvironmentSnapshotRepository;
         this.outsideWeatherSnapshotRepository = outsideWeatherSnapshotRepository;

@@ -22,7 +22,10 @@ public interface OutsideWeatherSnapshotRepository extends JpaRepository<OutsideW
             "WHERE fl.outside_weather_snapshot_id IS NULL LIMIT :batchSize", nativeQuery = true)
     List<Long> findOrphanWeatherSnapshotIds(@Param("batchSize") int batchSize);
 
+    // 조회~삭제 사이 레이스 대비: 삭제 시점에 참조 없는 것만 지운다(0건 삭제는 정상).
     @Modifying
-    @Query(value = "DELETE FROM outside_weather_snapshot WHERE weather_snapshot_id IN (:ids)", nativeQuery = true)
+    @Query(value = "DELETE FROM outside_weather_snapshot WHERE weather_snapshot_id IN (:ids) "
+            + "AND weather_snapshot_id NOT IN (SELECT fl.outside_weather_snapshot_id FROM feedback_log fl WHERE fl.outside_weather_snapshot_id IS NOT NULL)",
+            nativeQuery = true)
     void deleteWeatherSnapshotsByIds(@Param("ids") List<Long> ids);
 }
