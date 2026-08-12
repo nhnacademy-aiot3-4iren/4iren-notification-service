@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit 설정 - notification-service (텔레그램 알림 서비스)
+# 리뷰 언어: 한국어
+
+language: "ko-KR"
+
+# 리뷰 톤 지침 (모든 리뷰에 공통 적용)
+tone_instructions: >
+  한국어로 정중하고 간결하게 리뷰한다.
+  근거 없는 칭찬은 생략하고, 문제와 개선점 위주로 지적한다.
+  중요도(치명적/권장/사소)를 구분해서 표시한다.
+
+reviews:
+  # chill: 핵심 위주로 덜 깐깐하게 / assertive: 사소한 것까지 적극 지적
+  profile: "assertive"
+
+  # 리뷰에서 변경 요청 워크플로우 (승인 차단) 사용 여부
+  request_changes_workflow: false
+
+  # PR 상단에 고수준 요약 생성
+  high_level_summary: true
+
+  # 시(poem) 생성 비활성화
+  poem: false
+
+  # 리뷰 상태 코멘트 표시
+  review_status: true
+
+  # 변경 사항 워크스루 접기
+  collapse_walkthrough: false
+
+  auto_review:
+    enabled: true
+    # 드래프트 PR은 리뷰 안 함
+    drafts: false
+    # 이 브랜치들로 향하는 PR만 자동 리뷰
+    base_branches:
+      - "develop"
+      - "main"
+
+  # 리뷰 제외 경로 (빌드 산출물/생성 코드)
+  path_filters:
+    - "!**/target/**"
+    - "!**/build/**"
+    - "!**/generated/**"
+    - "!**/Q*.java"          # QueryDSL 생성 Q클래스
+    - "!**/*.min.js"
+
+  # 파일 경로별 리뷰 기준 (프로젝트 컨벤션 주입)
+  path_instructions:
+    - path: "**/*.java"
+      instructions: >
+        Spring Boot 3.x / Java 21 / Maven 프로젝트다. 다음 컨벤션 위반을 지적하라.
+        1) 엔티티는 setter 없이 도메인 메서드로만 상태를 변경한다. public setter 발견 시 지적.
+        2) 엔티티는 @Builder, @NoArgsConstructor(access = PROTECTED)를 쓴다.
+        3) 복합키는 @EmbeddedId를 쓰고, 서로게이트 id 컬럼을 추가하지 않는다.
+        4) 이벤트 DTO는 Java record로 만든다.
+        5) 이벤트 동기화 리스너는 반드시 stale 이벤트 가드(updated_at/timestamp 비교 후 오래된 이벤트 무시)를 적용한다.
+        6) findById()로 조회한 엔티티를 순수 FK 참조 연결에만 쓴다면 getReferenceById() 사용을 제안하라.
+        7) 파생값(예: admin 여부)을 별도 컬럼으로 중복 저장하지 말고 원본 테이블에 질의한다.
+        8) 새 메서드에는 Javadoc을 붙이되 1~2줄 요약만 쓰고 @param/@return/@throws는 넣지 않는다. 누락 시 지적.
+        9) 다른 서비스 DB에 직접 접근 금지(Database-per-Service). 연동은 OpenFeign 또는 RabbitMQ 이벤트로만.
+    - path: "**/src/test/**/*.java"
+      instructions: >
+        테스트는 단위 테스트, @DataJpaTest, @WebMvcTest를 상황에 맞게 사용한다.
+        의미 있는 경계/실패 케이스가 빠졌는지 확인하고, 커버리지 공백을 지적하라.
+    - path: "**/*.sql"
+      instructions: >
+        Flyway 마이그레이션이다. 대량 DELETE는 풀스캔/롱 트랜잭션을 유발하지 않도록 인덱스와 청크 삭제를 고려했는지 확인하라.
+        FK ON DELETE 동작(CASCADE 등)이 의도와 맞는지 점검하라.
+    - path: "**/*.{yml,yaml}"
+      instructions: >
+        application 설정이다. 시크릿(비밀번호/토큰/API 키)이 평문으로 커밋되지 않았는지 확인하라.
+
+chat:
+  # PR 코멘트에서 @coderabbitai 멘션에 자동 응답
+  auto_reply: true
+
+knowledge_base:
+  # 이 저장소의 과거 리뷰/학습 내용을 반영
+  learnings:
+    scope: "local"
