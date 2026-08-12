@@ -140,4 +140,17 @@ class AlertHistoryServiceTest {
         assertThat(options.alertTypeList()).containsExactly("SENSOR_ANOMALY");
         assertThat(options.rooms()).isEmpty();
     }
+
+    @Test
+    void getFilterOptionsReturnsEmptyRoomsWhenRoomSubInfoNull() {
+        when(telegramSubscriptionRepository.findActiveBotTypesByUserId(100L))
+                .thenReturn(List.of(BotType.ADMIN_BOT));
+        when(alertHistoryRepository.findAlertTypesByUserId(100L))
+                .thenReturn(List.of(AlertType.SENSOR_ANOMALY));
+        when(coreApiClient.getRoomSubscriptions(100L)).thenReturn(new UserRoomSubResponse(100L, null));
+
+        AlertHistoryFilterOptionsResponse options = alertHistoryService.getFilterOptions(100L);
+
+        assertThat(options.rooms()).isEmpty();
+    }
 }

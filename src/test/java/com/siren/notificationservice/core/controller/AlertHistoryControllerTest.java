@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -211,5 +212,49 @@ class AlertHistoryControllerTest {
                         .header("X-USER-ROLE", USER_ROLE))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void getAllAlertHistory_whenInvalidFilterValue_returns400() throws Exception {
+        when(alertHistoryService.getAlertHistoryByUserId(eq(USER_ID), any(AlertHistorySearchCondition.class), any(Pageable.class)))
+                .thenThrow(new IllegalArgumentException("No enum constant BotType.BAD"));
+
+        mockMvc.perform(get("/api/notification/alert-histories")
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", USER_ROLE)
+                        .param("botType", "BAD"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    // --- 역할 경계 (@RequireRole({OWNER, ADMIN})) ---
+
+    @Test
+    void getAllAlertHistory_whenNormalRole_returns403AndServiceNotCalled() throws Exception {
+        mockMvc.perform(get("/api/notification/alert-histories")
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", "NORMAL"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(alertHistoryService);
+    }
+
+    @Test
+    void getAllAlertHistory_whenRoleHeaderMissing_returns403() throws Exception {
+        mockMvc.perform(get("/api/notification/alert-histories")
+                        .header("X-USER-ID", USER_ID))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(alertHistoryService);
+    }
+
+    @Test
+    void getAllAlertHistory_whenUnknownRole_returns403() throws Exception {
+        mockMvc.perform(get("/api/notification/alert-histories")
+                        .header("X-USER-ID", USER_ID)
+                        .header("X-USER-ROLE", "SUPERUSER"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(alertHistoryService);
     }
 }

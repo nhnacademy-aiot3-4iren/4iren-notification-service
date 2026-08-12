@@ -55,6 +55,16 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(HttpStatus.FORBIDDEN.value(), "접근 권한이 없습니다."));
     }
 
+    /**
+     * 잘못된 요청 파라미터(예: 알 수 없는 botType/alertType 값으로 enum 변환 실패)일 때 400으로 응답한다.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
+        log.warn("잘못된 요청 파라미터: {}", e.getMessage());
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), "잘못된 요청 파라미터입니다."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
         log.error("처리되지 않은 예외 발생", e);
