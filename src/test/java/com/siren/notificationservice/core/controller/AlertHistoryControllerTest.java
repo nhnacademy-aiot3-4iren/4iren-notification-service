@@ -137,7 +137,7 @@ class AlertHistoryControllerTest {
         verify(alertHistoryService).getAlertHistoryByUserId(eq(USER_ID), condCaptor.capture(), any(Pageable.class));
 
         AlertHistorySearchCondition cond = condCaptor.getValue();
-        assertThat(cond.alertType().name()).isEqualTo("SENSOR_ANOMALY");
+        assertThat(cond.alertType()).isEqualTo("SENSOR_ANOMALY");
         assertThat(cond.roomId()).isEqualTo(101L);
     }
 
@@ -146,7 +146,10 @@ class AlertHistoryControllerTest {
     @Test
     void getFilterOptions_returnsConnectedBotsAndReceivedAlertTypes() throws Exception {
         when(alertHistoryService.getFilterOptions(USER_ID))
-                .thenReturn(new AlertHistoryFilterOptionsResponse(List.of("ADMIN_BOT", "USER_BOT"), List.of("SENSOR_ANOMALY")));
+                .thenReturn(new AlertHistoryFilterOptionsResponse(
+                        List.of("ADMIN_BOT", "USER_BOT"),
+                        List.of("SENSOR_ANOMALY"),
+                        List.of(new AlertHistoryFilterOptionsResponse.RoomOption(7L, "302호"))));
 
         mockMvc.perform(get("/api/notification/alert-histories/filter-options")
                         .header("X-USER-ID", USER_ID)
@@ -154,7 +157,9 @@ class AlertHistoryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.botTypeList[0]").value("ADMIN_BOT"))
                 .andExpect(jsonPath("$.botTypeList[1]").value("USER_BOT"))
-                .andExpect(jsonPath("$.alertTypeList[0]").value("SENSOR_ANOMALY"));
+                .andExpect(jsonPath("$.alertTypeList[0]").value("SENSOR_ANOMALY"))
+                .andExpect(jsonPath("$.rooms[0].roomId").value(7))
+                .andExpect(jsonPath("$.rooms[0].roomName").value("302호"));
     }
 
     // --- GET /api/notification/alert-histories/{alert-history-id} ---

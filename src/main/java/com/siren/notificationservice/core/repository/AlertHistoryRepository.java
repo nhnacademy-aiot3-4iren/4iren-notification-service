@@ -32,4 +32,5 @@ public interface AlertHistoryRepository extends JpaRepository<AlertHistory, Long
      */
     @Query("SELECT DISTINCT a.alertType FROM AlertHistory a WHERE a.userId = :userId AND a.alertType IS NOT NULL")
     List<AlertType> findAlertTypesByUserId(@Param("userId") Long userId);
+
 }

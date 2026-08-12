@@ -32,12 +32,10 @@ public class AlertHistoryRepositoryImpl implements AlertHistoryRepositoryCustom 
 
         BooleanBuilder bb = new BooleanBuilder();
         bb.and(q.userId.eq(userId));
-        BotType botType = BotType.valueOf(filter.botType());
-        AlertType alertType = AlertType.valueOf(filter.alertType());
-        
+
         if (filter.roomId() != null) bb.and(q.roomId.eq(filter.roomId()));
-        if (filter.botType() != null) bb.and(q.botType.eq(botType));
-        if (filter.alertType() != null) bb.and(q.alertType.eq(alertType));
+        if (filter.botType() != null) bb.and(q.botType.eq(BotType.valueOf(filter.botType())));
+        if (filter.alertType() != null) bb.and(q.alertType.eq(AlertType.valueOf(filter.alertType())));
         if (filter.from() != null) bb.and(q.sendAt.goe(filter.from().atStartOfDay(ZONE)));
         if (filter.to() != null) bb.and(q.sendAt.lt(filter.to().plusDays(1).atStartOfDay(ZONE)));
 

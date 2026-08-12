@@ -80,7 +80,7 @@ class AlertHistoryRepositoryTest {
         save(100L, BotType.ADMIN_BOT, AlertType.VENTILATION_RECOMMEND, ZonedDateTime.now(ZONE), "e2");
 
         Page<AlertHistory> page = alertHistoryRepository.search(
-                100L, new AlertHistorySearchCondition(null, null, AlertType.SENSOR_ANOMALY, null, null), PageRequest.of(0, 20));
+                100L, new AlertHistorySearchCondition(null, null, "SENSOR_ANOMALY", null, null), PageRequest.of(0, 20));
 
         assertThat(page.getContent()).extracting(AlertHistory::getAlertType).containsOnly(AlertType.SENSOR_ANOMALY);
     }
@@ -91,7 +91,7 @@ class AlertHistoryRepositoryTest {
         save(100L, BotType.USER_BOT, AlertType.SENSOR_ANOMALY, ZonedDateTime.now(ZONE), "e2");
 
         Page<AlertHistory> page = alertHistoryRepository.search(
-                100L, new AlertHistorySearchCondition(null, BotType.USER_BOT, null, null, null), PageRequest.of(0, 20));
+                100L, new AlertHistorySearchCondition(null, "USER_BOT", null, null, null), PageRequest.of(0, 20));
 
         assertThat(page.getContent()).extracting(AlertHistory::getBotType).containsOnly(BotType.USER_BOT);
     }
