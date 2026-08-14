@@ -2,7 +2,7 @@ package com.siren.notificationservice.core.entity.table;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -10,8 +10,8 @@ class FeedbackLogTest {
 
     @Test
     void builderSetsAllFields() {
-        ZonedDateTime createdAt = ZonedDateTime.now();
-        ZonedDateTime experiencedAt = createdAt.minusHours(1);
+        LocalDateTime createdAt = LocalDateTime.now();
+        LocalDateTime experiencedAt = createdAt.minusHours(1);
 
         FeedbackLog feedbackLog = FeedbackLog.builder()
                 .userId(1001L)

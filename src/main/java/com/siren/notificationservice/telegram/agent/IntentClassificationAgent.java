@@ -63,6 +63,7 @@ public class IntentClassificationAgent {
         IntentType intentType = IntentType.FALLBACK;
         try{
             String userMessage = event.update().getMessage().getText();
+            long timingStart = System.currentTimeMillis();
             String json = chatClient.prompt()
                     .user(userMessage)
                     // conversationId = chatId: 채팅방 단위로 대화 이력이 분리됨(유저 단위가 아님에 주의)
@@ -70,6 +71,7 @@ public class IntentClassificationAgent {
                     .options(googleGenAiChatOptions)
                     .call()
                     .content();
+            log.info("[Timing] IntentClassification LLM: {}ms", System.currentTimeMillis() - timingStart);
             log.debug("[IntentClassificationAgent] LLM 호출 결과 json: {}", json);
             intentType = objectMapper.readValue(json, IntentClassificationResult.class).intent();
         } catch (Exception e) {
@@ -89,7 +91,7 @@ public class IntentClassificationAgent {
             }
             """;
         return GoogleGenAiChatOptions.builder()
-                .model("gemini-flash-latest")
+                .model("gemini-3.1-flash-lite")
                 .responseMimeType("application/json")
                 .responseSchema(schemaJson)
                 .build();

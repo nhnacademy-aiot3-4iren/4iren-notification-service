@@ -8,6 +8,7 @@ import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.routing.handler.impl.FeedbackRouteHandler;
 import com.siren.notificationservice.telegram.service.TelegramMessageService;
 import org.junit.jupiter.api.Test;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -24,21 +25,27 @@ import static org.mockito.Mockito.when;
 
 class FeedbackCallbackHandlerTest {
 
+    private static final int MESSAGE_ID = 555;
+
     private final FeedbackExtractionCacheService feedbackExtractionCacheService = mock(FeedbackExtractionCacheService.class);
     private final FeedbackRouteHandler feedbackRouteHandler = mock(FeedbackRouteHandler.class);
     private final TelegramMessageService telegramMessageService = mock(TelegramMessageService.class);
     private final FeedbackCallbackHandler feedbackCallbackHandler =
             new FeedbackCallbackHandler(feedbackExtractionCacheService, feedbackRouteHandler, telegramMessageService);
 
-    private TelegramInboundEvent textEvent() {
+    // 인라인 키보드 탭 = callback_query. 핸들러가 getCallbackQuery().getMessage().getMessageId()를 쓰므로 콜백 이벤트로 만든다.
+    private TelegramInboundEvent callbackEvent() {
         Chat chat = new Chat();
         chat.setId(100L);
         Message message = new Message();
         message.setChat(chat);
-        message.setText("301호");
-        message.setDate((int) (System.currentTimeMillis() / 1000));
+        message.setMessageId(MESSAGE_ID);
+        CallbackQuery cq = new CallbackQuery();
+        cq.setId("cbq-1");
+        cq.setData("FB_ROOM:301호");
+        cq.setMessage(message);
         Update update = new Update();
-        update.setMessage(message);
+        update.setCallbackQuery(cq);
         return new TelegramInboundEvent(BotType.USER_BOT, update);
     }
 
@@ -48,25 +55,27 @@ class FeedbackCallbackHandlerTest {
     }
 
     @Test
-    void handleDelegatesToFeedbackRouteHandlerWhenCacheExists() {
+    void handleRemovesKeyboardAndDelegatesWhenCacheExists() {
         FeedbackExtractionCache cache = new FeedbackExtractionCache("더워요", List.of(), null);
         when(feedbackExtractionCacheService.find(1L)).thenReturn(Optional.of(cache));
-        TelegramInboundEvent event = textEvent();
+        TelegramInboundEvent event = callbackEvent();
 
         feedbackCallbackHandler.handle(event, 1L);
 
+        verify(telegramMessageService).removeInlineKeyboard(event.chatId(), MESSAGE_ID, BotType.USER_BOT);
         verify(feedbackRouteHandler).handleUserReply(event, 1L, cache);
-        verify(telegramMessageService, never()).sendFeedbackProcessingFailedMessage(any(), any());
+        verify(telegramMessageService, never()).sendFeedbackAlreadyHandledMessage(any(), any());
     }
 
     @Test
-    void handleSendsFailedMessageWhenCacheExpired() {
+    void handleSendsAlreadyHandledMessageWhenCacheEmpty() {
         when(feedbackExtractionCacheService.find(1L)).thenReturn(Optional.empty());
-        TelegramInboundEvent event = textEvent();
+        TelegramInboundEvent event = callbackEvent();
 
         feedbackCallbackHandler.handle(event, 1L);
 
-        verify(telegramMessageService).sendFeedbackProcessingFailedMessage(event.chatId(), BotType.USER_BOT);
+        verify(telegramMessageService).sendFeedbackAlreadyHandledMessage(event.chatId(), BotType.USER_BOT);
         verify(feedbackRouteHandler, never()).handleUserReply(any(), any(), any());
+        verify(telegramMessageService, never()).removeInlineKeyboard(any(), any(), any());
     }
 }

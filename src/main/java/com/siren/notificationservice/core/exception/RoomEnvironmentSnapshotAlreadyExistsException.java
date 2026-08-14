@@ -1,9 +1,9 @@
 package com.siren.notificationservice.core.exception;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 public class RoomEnvironmentSnapshotAlreadyExistsException extends RuntimeException {
-    public RoomEnvironmentSnapshotAlreadyExistsException(Long roomId, ZonedDateTime windowStart) {
+    public RoomEnvironmentSnapshotAlreadyExistsException(Long roomId, LocalDateTime windowStart) {
         super("roomId=" + roomId + " windowStart=" + windowStart+" already exists");
     }
 }

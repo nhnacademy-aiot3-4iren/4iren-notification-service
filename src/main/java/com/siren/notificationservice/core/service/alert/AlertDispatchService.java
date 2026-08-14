@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -101,7 +101,7 @@ public class AlertDispatchService {
                     .alertType(event.alertType())
                     .eventId(event.eventId())
                     .message(message)
-                    .sendAt(ZonedDateTime.now(SERVICE_ZONE))
+                    .sendAt(LocalDateTime.now(SERVICE_ZONE))
                     .userId(subscription.getUserId())
                     .build());
         }

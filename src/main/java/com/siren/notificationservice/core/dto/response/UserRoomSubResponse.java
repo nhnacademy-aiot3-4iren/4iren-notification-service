@@ -8,9 +8,4 @@ public record UserRoomSubResponse(
         @JsonProperty("userId") Long userId,
         @JsonProperty("roomSubInfo")List<RoomSubResponse> roomSubInfo
 ) {
-    public record RoomSubResponse(
-            @JsonProperty("roomId") Long roomId,
-            @JsonProperty("roomName")String roomName,
-            @JsonProperty("notificationEnabled") boolean notificationEnabled) {
-    }
 }

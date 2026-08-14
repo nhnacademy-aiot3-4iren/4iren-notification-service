@@ -5,7 +5,7 @@ import com.siren.notificationservice.core.dto.response.FeedbackExportResult;
 import com.siren.notificationservice.core.entity.table.FeedbackLog;
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,7 +22,7 @@ class FeedbackExportServiceTest {
     @Test
     void exportAsCsvReturnsCsvAndLastFetchedId() {
         FeedbackLog log = FeedbackLog.builder()
-                .feedbackLogId(5L).roomId(7L).rawText("더워요").createdAt(ZonedDateTime.now()).delayed(false).userId(1L).build();
+                .feedbackLogId(5L).roomId(7L).rawText("더워요").createdAt(LocalDateTime.now()).delayed(false).userId(1L).build();
         EnrichedFeedbackLog enriched = new EnrichedFeedbackLog(log, List.of(), List.of(), null);
         when(feedbackExportQueryService.fetch(0L, 10)).thenReturn(List.of(enriched));
         when(feedbackCsvConverter.toCsv(List.of(enriched))).thenReturn("csv-data");

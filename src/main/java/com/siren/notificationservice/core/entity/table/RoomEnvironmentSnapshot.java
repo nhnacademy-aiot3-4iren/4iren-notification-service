@@ -5,7 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -32,7 +32,7 @@ public class RoomEnvironmentSnapshot {
     private Long roomId;
 
     @Column(name = "window_start", nullable = false)
-    private ZonedDateTime windowStart;
+    private LocalDateTime windowStart;
 
     @OneToMany(mappedBy = "snapshot", fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)

@@ -13,7 +13,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
@@ -33,7 +33,7 @@ class AlertHistoryRepositoryTest {
     @Autowired
     private AlertHistoryRepository alertHistoryRepository;
 
-    private AlertHistory save(Long userId, BotType botType, AlertType alertType, ZonedDateTime sendAt, String eventId) {
+    private AlertHistory save(Long userId, BotType botType, AlertType alertType, LocalDateTime sendAt, String eventId) {
         return alertHistoryRepository.save(AlertHistory.builder()
                 .roomId(7L)
                 .botType(botType)
@@ -47,7 +47,7 @@ class AlertHistoryRepositoryTest {
 
     @Test
     void savesAndFindsAlertHistoryById() {
-        AlertHistory saved = save(1L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, ZonedDateTime.now(ZONE), "evt-1");
+        AlertHistory saved = save(1L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, LocalDateTime.now(ZONE), "evt-1");
 
         Optional<AlertHistory> found = alertHistoryRepository.findById(saved.getAlertHistoryId());
 
@@ -65,8 +65,8 @@ class AlertHistoryRepositoryTest {
 
     @Test
     void searchReturnsOnlyOwnHistory() {
-        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, ZonedDateTime.now(ZONE), "e1");
-        save(999L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, ZonedDateTime.now(ZONE), "e2"); // 남의 이력
+        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, LocalDateTime.now(ZONE), "e1");
+        save(999L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, LocalDateTime.now(ZONE), "e2"); // 남의 이력
 
         Page<AlertHistory> page = alertHistoryRepository.search(
                 100L, new AlertHistorySearchCondition(null, null, null, null, null), PageRequest.of(0, 20));
@@ -76,8 +76,8 @@ class AlertHistoryRepositoryTest {
 
     @Test
     void searchFiltersByAlertType() {
-        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, ZonedDateTime.now(ZONE), "e1");
-        save(100L, BotType.ADMIN_BOT, AlertType.VENTILATION_RECOMMEND, ZonedDateTime.now(ZONE), "e2");
+        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, LocalDateTime.now(ZONE), "e1");
+        save(100L, BotType.ADMIN_BOT, AlertType.VENTILATION_RECOMMEND, LocalDateTime.now(ZONE), "e2");
 
         Page<AlertHistory> page = alertHistoryRepository.search(
                 100L, new AlertHistorySearchCondition(null, null, "SENSOR_ANOMALY", null, null), PageRequest.of(0, 20));
@@ -87,8 +87,8 @@ class AlertHistoryRepositoryTest {
 
     @Test
     void searchFiltersByBotType() {
-        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, ZonedDateTime.now(ZONE), "e1");
-        save(100L, BotType.USER_BOT, AlertType.SENSOR_ANOMALY, ZonedDateTime.now(ZONE), "e2");
+        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, LocalDateTime.now(ZONE), "e1");
+        save(100L, BotType.USER_BOT, AlertType.SENSOR_ANOMALY, LocalDateTime.now(ZONE), "e2");
 
         Page<AlertHistory> page = alertHistoryRepository.search(
                 100L, new AlertHistorySearchCondition(null, "USER_BOT", null, null, null), PageRequest.of(0, 20));
@@ -99,9 +99,9 @@ class AlertHistoryRepositoryTest {
     @Test
     void searchFiltersByDateRange_fromExcludesOlder_toIncludesToDay() {
         LocalDate today = LocalDate.now(ZONE); // 한 번만 캡처해 자정 경계 flaky 제거
-        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, today.minusDays(10).atTime(12, 0).atZone(ZONE), "e-old");
-        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, today.atTime(12, 0).atZone(ZONE), "e-today");
-        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, today.plusDays(1).atTime(12, 0).atZone(ZONE), "e-tomorrow");
+        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, today.minusDays(10).atTime(12, 0), "e-old");
+        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, today.atTime(12, 0), "e-today");
+        save(100L, BotType.ADMIN_BOT, AlertType.SENSOR_ANOMALY, today.plusDays(1).atTime(12, 0), "e-tomorrow");
 
         // from=today(오래된 것 제외) + to=today(다음날 제외, to 당일은 포함) -> today 것만
         Page<AlertHistory> page = alertHistoryRepository.search(

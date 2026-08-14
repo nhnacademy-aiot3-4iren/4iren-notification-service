@@ -37,6 +37,10 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.routing-key.alert-digest-flush}") private String alertDigestFlushRoutingKey;
     @Value("${rabbitmq.alert-digest.ttl-ms}")           private long alertDigestTtlMs;
 
+    @Value("${rabbitmq.exchange.user-role}") private String userRoleExchangeName;
+    @Value("${rabbitmq.queue.user-role}") private String userRoleQueueName;
+    @Value("${rabbitmq.routing-key.user-role}") private String userRoleRoutingKey;
+
     @Value("${rabbitmq.exchange.dlx}") private String dlxExchangeName;
     @Value("${rabbitmq.queue.dlq}") private String dlqQueueName;
     @Value("${rabbitmq.routing-key.dlq}") private String dlqRoutingKey;
@@ -187,6 +191,18 @@ public class RabbitMQConfig {
     @Bean
     public Binding alertDigestFlushBinding(Queue alertDigestFlushQueue, DirectExchange alertDigestDlxExchange) {
         return BindingBuilder.bind(alertDigestFlushQueue).to(alertDigestDlxExchange).with(alertDigestFlushRoutingKey);
+    }
+
+    // Account
+    @Bean
+    public DirectExchange accountRoleExchange() { return new DirectExchange(userRoleExchangeName);}
+
+    @Bean
+    public Queue accountRoleQueue() {return new Queue(userRoleQueueName, true);}
+
+    @Bean
+    public Binding accountRoleBinding(Queue accountRoleQueue, DirectExchange accountRoleExchange) {
+        return BindingBuilder.bind(accountRoleQueue).to(accountRoleExchange).with(userRoleRoutingKey);
     }
 
 

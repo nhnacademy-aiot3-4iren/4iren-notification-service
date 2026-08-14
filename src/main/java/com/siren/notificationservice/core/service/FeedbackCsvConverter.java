@@ -10,7 +10,7 @@ import com.siren.notificationservice.core.entity.table.RoomEnvironmentReading;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -101,8 +101,8 @@ public class FeedbackCsvConverter {
         if (log.isDelayed() && log.getExperiencedAt() == null) {
             return "";
         }
-        ZonedDateTime referenceAt = log.getExperiencedAt() != null ? log.getExperiencedAt() : log.getCreatedAt();
-        return referenceAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        LocalDateTime referenceAt = log.getExperiencedAt() != null ? log.getExperiencedAt() : log.getCreatedAt();
+        return referenceAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
     private BigDecimal extractIndoor(List<RoomEnvironmentReading> readings, EnvironmentMetricType metricType) {

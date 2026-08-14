@@ -5,7 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -33,13 +33,13 @@ public class FeedbackLog {
     private String rawText; // 피드백 원문 보존 (재분류/재학습 대비), 자연어 전용이라 항상 존재
 
     @Column(name = "created_at", nullable = false)
-    private ZonedDateTime createdAt; // 피드백 제출 시각
+    private LocalDateTime createdAt; // 피드백 제출 시각
 
     @Column(name = "is_delayed", nullable = false)
     private boolean delayed; // 자연어에서 지연 제출 신호("아까", "집에 와서" 등)가 감지되면 true
 
     @Column(name = "experienced_at")
-    private ZonedDateTime experiencedAt; // 사용자가 언급한 구체적 체감 시각(있으면 환경 스냅샷 매칭 기준점), 없으면 NULL
+    private LocalDateTime experiencedAt; // 사용자가 언급한 구체적 체감 시각(있으면 환경 스냅샷 매칭 기준점), 없으면 NULL
 
     @Column(name = "user_id", nullable = false)
     private Long userId; // Account API 소유 유저 id (bare, 로컬 FK 없음)

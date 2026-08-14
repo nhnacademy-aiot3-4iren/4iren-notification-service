@@ -13,7 +13,7 @@ import com.siren.notificationservice.telegram.service.TelegramMessageService;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -46,7 +46,7 @@ class AlertDispatchServiceTest {
     private TelegramSubscription subscription(Long userId, BotType botType) {
         return TelegramSubscription.builder()
                 .userId(userId).botType(botType).chatId("chat-" + userId)
-                .active(true).createdAt(ZonedDateTime.now()).build();
+                .active(true).createdAt(LocalDateTime.now()).build();
     }
 
     @Test

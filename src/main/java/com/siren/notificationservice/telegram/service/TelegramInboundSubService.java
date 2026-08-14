@@ -2,6 +2,7 @@ package com.siren.notificationservice.telegram.service;
 
 import com.siren.notificationservice.core.entity.table.TelegramSubscription;
 import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
+import com.siren.notificationservice.telegram.dto.LinkTokenData;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +14,7 @@ import org.telegram.telegrambots.meta.api.objects.chatmember.ChatMemberBanned;
 import org.telegram.telegrambots.meta.api.objects.chatmember.ChatMemberMember;
 
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
@@ -31,25 +32,24 @@ public class TelegramInboundSubService {
 
     /**
      * 유효한 토큰으로 확인된 "/start" 요청을 실제로 반영한다.
-     *
-     * @param event  원본 이벤트 (botType 확인용)
-     * @param userId 토큰에 매핑된 유저 id
      */
-    public void handleValidStart(TelegramInboundEvent event, Long userId) {
+    public void handleValidStart(TelegramInboundEvent event, LinkTokenData data) {
         String chatId = event.chatId();
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).truncatedTo(ChronoUnit.SECONDS);
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul")).truncatedTo(ChronoUnit.SECONDS);
 
         // 연동이 최초인지, 재연동인지 판단
         Optional<TelegramSubscription> existing =
-                telegramSubscriptionRepository.findByUserIdAndBotType(userId, event.botType());
+                telegramSubscriptionRepository.findByUserIdAndBotType(data.userId(), event.botType());
 
         if (existing.isPresent()) {
             existing.get().link(chatId, now);
         } else {
             TelegramSubscription subscription = TelegramSubscription.builder()
-                    .userId(userId)
+                    .userId(data.userId())
                     .botType(event.botType())
                     .chatId(chatId)
+                    .userRole(data.role())
+                    .roleUpdatedAt(now)
                     .active(true)
                     .createdAt(now)
                     .build();

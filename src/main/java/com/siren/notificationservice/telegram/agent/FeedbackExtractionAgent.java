@@ -98,11 +98,13 @@ public class FeedbackExtractionAgent {
                     "rawText", rawText
             ));
 
+            long timingStart = System.currentTimeMillis();
             String json = chatClient.prompt()
                     .user(userMessage)
                     .options(buildJsonOptions(subscribedRoomNames))
                     .call()
                     .content();
+            log.info("[Timing] FeedbackExtraction LLM: {}ms", System.currentTimeMillis() - timingStart);
             return objectMapper.readValue(json, FeedbackExtractionResult.class);
         } catch (Exception e) {
             log.warn("[FeedbackExtractionAgent] 추출 실패 -> 기본값 처리 (rawText={})", rawText, e);

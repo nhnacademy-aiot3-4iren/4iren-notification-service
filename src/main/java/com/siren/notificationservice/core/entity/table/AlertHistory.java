@@ -9,7 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "alert_history",
@@ -44,7 +44,7 @@ public class AlertHistory {
     private String message;
 
     @Column(name = "send_at", nullable = false)
-    private ZonedDateTime sendAt;
+    private LocalDateTime sendAt;
 
     @Column(name = "user_id", nullable = false)
     private Long userId; // Account API 소유 유저 id (bare, 로컬 FK 없음)

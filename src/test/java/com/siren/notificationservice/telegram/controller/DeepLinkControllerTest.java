@@ -1,6 +1,8 @@
 package com.siren.notificationservice.telegram.controller;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.entity.domain.UserRole;
+import com.siren.notificationservice.telegram.dto.LinkTokenData;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,7 +30,7 @@ class DeepLinkControllerTest {
 
     @Test
     void linkAdminTokenReturnsDeepLinkUrl() throws Exception {
-        when(telegramLinkTokenService.getDeepLinkUrl(1L, BotType.ADMIN_BOT))
+        when(telegramLinkTokenService.getDeepLinkUrl(new LinkTokenData(1L, UserRole.ADMIN), BotType.ADMIN_BOT))
                 .thenReturn("https://t.me/admin_bot?start=abc");
 
         mockMvc.perform(post("/telegram/admin/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", "ADMIN"))
@@ -39,7 +41,7 @@ class DeepLinkControllerTest {
 
     @Test
     void linkMemberTokenReturnsDeepLinkUrl() throws Exception {
-        when(telegramLinkTokenService.getDeepLinkUrl(1L, BotType.USER_BOT))
+        when(telegramLinkTokenService.getDeepLinkUrl(new LinkTokenData(1L, UserRole.NORMAL), BotType.USER_BOT))
                 .thenReturn("https://t.me/member_bot?start=abc");
 
         mockMvc.perform(post("/telegram/member/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", "NORMAL"))
@@ -96,7 +98,7 @@ class DeepLinkControllerTest {
     @ParameterizedTest
     @ValueSource(strings = {"OWNER", "ADMIN"})
     void linkMemberTokenAllowedForElevatedRoles(String role) throws Exception {
-        when(telegramLinkTokenService.getDeepLinkUrl(1L, BotType.USER_BOT))
+        when(telegramLinkTokenService.getDeepLinkUrl(new LinkTokenData(1L, UserRole.valueOf(role)), BotType.USER_BOT))
                 .thenReturn("https://t.me/member_bot?start=abc");
 
         mockMvc.perform(post("/telegram/member/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", role))

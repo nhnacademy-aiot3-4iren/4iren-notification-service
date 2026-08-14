@@ -10,7 +10,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,7 +68,7 @@ class RoomEnvironmentReadingRepositoryTest {
     }
 
     private RoomEnvironmentSnapshot snapshot() {
-        return RoomEnvironmentSnapshot.builder().roomId(7L).windowStart(ZonedDateTime.now()).build();
+        return RoomEnvironmentSnapshot.builder().roomId(7L).windowStart(LocalDateTime.now()).build();
     }
 
     private RoomEnvironmentReading reading(RoomEnvironmentSnapshot snapshot, EnvironmentMetricType metricType, String value) {

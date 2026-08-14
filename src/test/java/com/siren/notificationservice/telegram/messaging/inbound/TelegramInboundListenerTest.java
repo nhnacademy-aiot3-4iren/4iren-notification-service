@@ -1,11 +1,13 @@
 package com.siren.notificationservice.telegram.messaging.inbound;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.entity.domain.UserRole;
 import com.siren.notificationservice.core.exception.MissingChatIdException;
 import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
 import com.siren.notificationservice.telegram.agent.IntentClassificationAgent;
 import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.callback.handler.CallbackRouteDispatcher;
+import com.siren.notificationservice.telegram.dto.LinkTokenData;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.service.TelegramInboundSubService;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
@@ -88,11 +90,14 @@ class TelegramInboundListenerTest {
     @Test
     void handleWithValidStartTokenLinksAndSendsSuccessMessage() {
         TelegramInboundEvent event = textEvent(BotType.USER_BOT, "/start abc123");
-        when(telegramLinkTokenService.consumeToken("abc123", BotType.USER_BOT)).thenReturn(Optional.of(1L));
+        Long userId = 1L;
+        UserRole role = UserRole.OWNER;
+        LinkTokenData linkTokenData = new LinkTokenData(userId, role);
+        when(telegramLinkTokenService.consumeToken("abc123", BotType.USER_BOT)).thenReturn(Optional.of(linkTokenData));
 
         telegramInboundListener.handle(event);
 
-        verify(telegramInboundSubService).handleValidStart(event, 1L);
+        verify(telegramInboundSubService).handleValidStart(event, linkTokenData);
         verify(telegramMessageService).sendLinkSuccessMessage(event.chatId(), BotType.USER_BOT);
     }
 

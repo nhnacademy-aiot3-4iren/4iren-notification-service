@@ -17,7 +17,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -91,7 +91,7 @@ public class AlertDigestFlushListener {
                         .alertType(event.alertType())
                         .eventId(event.eventId())
                         .message(eventSummary)
-                        .sendAt(ZonedDateTime.now(SERVICE_ZONE))
+                        .sendAt(LocalDateTime.now(SERVICE_ZONE))
                         .userId(s.getUserId())
                         .build());
             }

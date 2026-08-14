@@ -17,7 +17,7 @@ import com.siren.notificationservice.core.service.basic_service.RoomEnvironmentR
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,12 +46,12 @@ class FeedbackExportQueryServiceTest {
     @Test
     void fetchBundlesLogWithItsScoresReadingsAndWeather() {
         RoomEnvironmentSnapshot snapshot = RoomEnvironmentSnapshot.builder()
-                .snapshotId(100L).roomId(7L).windowStart(ZonedDateTime.now()).build();
+                .snapshotId(100L).roomId(7L).windowStart(LocalDateTime.now()).build();
         OutsideWeatherSnapshot weather = OutsideWeatherSnapshot.builder()
-                .weatherSnapshotId(200L).nx(60).ny(127).windowStart(ZonedDateTime.now()).build();
+                .weatherSnapshotId(200L).nx(60).ny(127).windowStart(LocalDateTime.now()).build();
         FeedbackLog log = FeedbackLog.builder()
                 .feedbackLogId(1L).roomId(7L).snapshot(snapshot).outsideWeatherSnapshot(weather)
-                .rawText("더워요").createdAt(ZonedDateTime.now()).userId(1L).delayed(false).build();
+                .rawText("더워요").createdAt(LocalDateTime.now()).userId(1L).delayed(false).build();
         FeedbackScore score = FeedbackScore.builder()
                 .id(FeedbackScoreId.builder().feedbackLogId(1L).sensorType(SensorType.TEMPERATURE).build())
                 .score(1).build();
@@ -77,7 +77,7 @@ class FeedbackExportQueryServiceTest {
     @Test
     void fetchLeavesReadingsAndWeatherEmptyWhenLogHasNoSnapshot() {
         FeedbackLog log = FeedbackLog.builder()
-                .feedbackLogId(1L).roomId(7L).rawText("더워요").createdAt(ZonedDateTime.now()).delayed(false).userId(1L).build();
+                .feedbackLogId(1L).roomId(7L).rawText("더워요").createdAt(LocalDateTime.now()).delayed(false).userId(1L).build();
 
         when(feedbackLogService.getFeedbackLogs(0L, 10)).thenReturn(List.of(log));
         when(feedbackScoreService.getScoresByFeedbackLogIdIn(List.of(1L))).thenReturn(List.of());

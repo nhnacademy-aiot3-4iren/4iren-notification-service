@@ -28,7 +28,7 @@ class FeedbackProcessingListenerTest {
 
         feedbackProcessingListener.handle(event);
 
-        verify(feedbackPersistenceService).persist(event, experiencedAt.atZone(ZONE));
+        verify(feedbackPersistenceService).persist(event, experiencedAt);
     }
 
     @Test
@@ -38,14 +38,14 @@ class FeedbackProcessingListenerTest {
 
         feedbackProcessingListener.handle(event);
 
-        verify(feedbackPersistenceService).persist(event, receivedAt.atZone(ZONE));
+        verify(feedbackPersistenceService).persist(event, receivedAt);
     }
 
     @Test
     void handleLetsExceptionPropagateSoItReachesDlq() {
         LocalDateTime receivedAt = LocalDateTime.now();
         FeedbackProcessingEvent event = new FeedbackProcessingEvent(1L, 7L, "더워요", List.of(), false, null, receivedAt);
-        doThrow(new RuntimeException("DB 저장 실패")).when(feedbackPersistenceService).persist(event, receivedAt.atZone(ZONE));
+        doThrow(new RuntimeException("DB 저장 실패")).when(feedbackPersistenceService).persist(event, receivedAt);
 
         // 예상 밖 실패는 삼키지 않고 던져야 재시도→DLQ로 흘러간다 (DLQ 도입 후 정책)
         assertThrows(RuntimeException.class, () -> feedbackProcessingListener.handle(event));

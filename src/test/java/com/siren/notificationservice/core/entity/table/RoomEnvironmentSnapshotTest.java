@@ -2,7 +2,7 @@ package com.siren.notificationservice.core.entity.table;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -10,7 +10,7 @@ class RoomEnvironmentSnapshotTest {
 
     @Test
     void builderSetsAllFields() {
-        ZonedDateTime windowStart = ZonedDateTime.now();
+        LocalDateTime windowStart = LocalDateTime.now();
 
         RoomEnvironmentSnapshot snapshot = RoomEnvironmentSnapshot.builder()
                 .roomId(7L)

@@ -14,7 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 /**
  * 외부(제3자) 날씨 API 실측값 한 시간 단위 스냅샷. room_environment_snapshot과 달리
@@ -59,7 +59,7 @@ public class OutsideWeatherSnapshot {
     private Integer ny; // 기상청 격자 좌표 Y
 
     @Column(name = "window_start", nullable = false)
-    private ZonedDateTime windowStart; // Core가 알려준 "실제 데이터 시각" (우리가 계산한 반내림 시각 아님)
+    private LocalDateTime windowStart; // Core가 알려준 "실제 데이터 시각" (우리가 계산한 반내림 시각 아님)
 
     @Column(name = "outside_temperature", precision = 4, scale = 1)
     private BigDecimal outsideTemperature; // nullable - 날씨 API 실패해도 피드백 자체는 저장돼야 하므로

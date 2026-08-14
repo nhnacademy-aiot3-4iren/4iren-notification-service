@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,7 +16,7 @@ public interface RoomEnvironmentSnapshotRepository extends JpaRepository<RoomEnv
      * referenceAt을 커버 구간([windowStart-15분, windowStart])에 포함하는 스냅샷을 찾는다.
      */
     Optional<RoomEnvironmentSnapshot> findFirstByRoomIdAndWindowStartBetweenOrderByWindowStartAsc(
-            Long roomId, ZonedDateTime referenceAt, ZonedDateTime referenceAtPlus15);
+            Long roomId, LocalDateTime referenceAt, LocalDateTime referenceAtPlus15);
 
     /**
      * 특정 강의실의 스냅샷 전체를 조회한다.

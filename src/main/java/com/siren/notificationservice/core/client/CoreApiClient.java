@@ -39,6 +39,6 @@ public interface CoreApiClient {
      * 해당 강의실에 대한 외부날씨 스냅샷을 남긴다.
      */
     @GetMapping("/api/core/kma/rooms/{room-id}/weather")
-    OutsideWeather getOutsideWeather(@PathVariable("room-id")Long roomId, @RequestParam LocalDateTime requestAt);
+    OutsideWeather getOutsideWeather(@PathVariable("room-id")Long roomId, @RequestParam("dateTime") LocalDateTime requestAt);
 
 }

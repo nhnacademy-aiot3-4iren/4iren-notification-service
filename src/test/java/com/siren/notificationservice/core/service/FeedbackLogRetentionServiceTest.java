@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -38,7 +38,7 @@ class FeedbackLogRetentionServiceTest {
         List<Long> roomBatch = List.of(10L, 11L);
         List<Long> weatherBatch = List.of(20L);
         // 각 조회: 1차 배치 반환(계속) -> 2차 빈 리스트(종료)
-        when(feedbackLogRepository.findOldLogIds(any(ZonedDateTime.class), eq(BATCH_SIZE)))
+        when(feedbackLogRepository.findOldLogIds(any(LocalDateTime.class), eq(BATCH_SIZE)))
                 .thenReturn(logBatch, List.of());
         when(roomEnvironmentSnapshotRepository.findOrphanSnapshotIds(BATCH_SIZE))
                 .thenReturn(roomBatch, List.of());
@@ -56,7 +56,7 @@ class FeedbackLogRetentionServiceTest {
     @Test
     void purgeDoesNothingWhenNothingToDelete() {
         // 지울 게 하나도 없으면 각 조회가 빈 리스트 -> 삭제/트랜잭션 없이 종료
-        when(feedbackLogRepository.findOldLogIds(any(ZonedDateTime.class), eq(BATCH_SIZE))).thenReturn(List.of());
+        when(feedbackLogRepository.findOldLogIds(any(LocalDateTime.class), eq(BATCH_SIZE))).thenReturn(List.of());
         when(roomEnvironmentSnapshotRepository.findOrphanSnapshotIds(BATCH_SIZE)).thenReturn(List.of());
         when(outsideWeatherSnapshotRepository.findOrphanWeatherSnapshotIds(BATCH_SIZE)).thenReturn(List.of());
 

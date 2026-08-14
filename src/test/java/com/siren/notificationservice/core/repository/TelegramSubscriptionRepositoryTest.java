@@ -1,13 +1,14 @@
 package com.siren.notificationservice.core.repository;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.entity.domain.UserRole;
 import com.siren.notificationservice.core.entity.table.TelegramSubscription;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -90,7 +91,8 @@ class TelegramSubscriptionRepositoryTest {
                 .botType(botType)
                 .chatId(chatId)
                 .active(active)
-                .createdAt(ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS))
+                .userRole(UserRole.NORMAL)
+                .createdAt(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS))
                 .build();
     }
 }

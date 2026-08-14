@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -43,7 +43,7 @@ public class OutsideWeatherSnapshotService {
      * 같은 지역(nx, ny)·같은 시간대 스냅샷이 있으면 그 id를, 없으면 null을 반환한다.
      */
     @Transactional(readOnly = true)
-    public OutsideWeatherSnapshot findSnapshotId(Integer nx, Integer ny, ZonedDateTime windowStart) {
+    public OutsideWeatherSnapshot findSnapshotId(Integer nx, Integer ny, LocalDateTime windowStart) {
         Objects.requireNonNull(nx, "nx는 null일 수 없습니다.");
         Objects.requireNonNull(ny, "ny는 null일 수 없습니다.");
         Objects.requireNonNull(windowStart, "windowStart는 null일 수 없습니다.");
@@ -55,7 +55,7 @@ public class OutsideWeatherSnapshotService {
      * 새 외부 날씨 스냅샷을 만든다. 같은 (nx, ny, windowStart)가 이미 있으면 예외를 던진다.
      */
     @Transactional
-    public OutsideWeatherSnapshot createOutsideWeatherSnapshot(Integer nx, Integer ny, ZonedDateTime windowStart,
+    public OutsideWeatherSnapshot createOutsideWeatherSnapshot(Integer nx, Integer ny, LocalDateTime windowStart,
                                                                 BigDecimal outsideTemperature, BigDecimal outsideHumidity) {
         Objects.requireNonNull(nx, "nx는 null일 수 없습니다.");
         Objects.requireNonNull(ny, "ny는 null일 수 없습니다.");

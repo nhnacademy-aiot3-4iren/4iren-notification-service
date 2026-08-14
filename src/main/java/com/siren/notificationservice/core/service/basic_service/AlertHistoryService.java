@@ -80,7 +80,7 @@ public class AlertHistoryService {
                 alertHistory.getBotType().name(),
                 alertHistory.getAlertType() != null ? alertHistory.getAlertType().name() : null,
                 alertHistory.getMessage(),
-                alertHistory.getSendAt().toLocalDateTime()
+                alertHistory.getSendAt()
         );
     }
 

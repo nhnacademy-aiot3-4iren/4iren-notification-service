@@ -6,6 +6,7 @@ import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFound
 import com.siren.notificationservice.telegram.agent.IntentClassificationAgent;
 import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.callback.handler.CallbackRouteDispatcher;
+import com.siren.notificationservice.telegram.dto.LinkTokenData;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
 import com.siren.notificationservice.telegram.service.TelegramMessageService;
@@ -75,14 +76,14 @@ public class TelegramInboundListener {
             return;
         }
 
-        Optional<Long> userId = telegramLinkTokenService.consumeToken(token, event.botType());
-        if (userId.isEmpty()) {
+        LinkTokenData data = telegramLinkTokenService.consumeToken(token, event.botType()).orElse(null);
+        if (data == null) {
             log.info("만료되었거나 이미 사용된 딥링크 토큰 수신 (botType={}), 사용자에게 안내", event.botType());
             telegramMessageService.sendTokenExpiredMessage(event.chatId(), event.botType());
             return;
         }
 
-        telegramInboundSubService.handleValidStart(event, userId.get()); //연동 로직체크
+        telegramInboundSubService.handleValidStart(event, data); //연동 로직체크
         telegramMessageService.sendLinkSuccessMessage(event.chatId(), event.botType());// 연동 성공 메세지
     }
 

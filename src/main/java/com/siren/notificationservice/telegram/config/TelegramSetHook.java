@@ -29,6 +29,7 @@ public class TelegramSetHook implements ApplicationRunner {
                     .uri(SET_WEBHOOK_URL, token, webhookUrl)
                     .retrieve()
                     .body(String.class);
+
             log.info("[TelegramSetHook] 웹훅 등록 요청 (url={}) -> {}", webhookUrl, response);
         }catch (Exception e){
             log.warn("[TelegramSetHook] 웹훅 등록 실패 그래도 애플리케이션 부팅 진행 (url={})", webhookUrl, e);

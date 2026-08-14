@@ -9,7 +9,7 @@ import com.siren.notificationservice.core.service.basic_service.RoomEnvironmentS
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,7 +28,7 @@ class RoomEnvironmentSnapshotServiceTest {
     private final RoomEnvironmentSnapshotService roomEnvironmentSnapshotService =
             new RoomEnvironmentSnapshotService(roomEnvironmentSnapshotRepository, roomEnvironmentReadingService);
 
-    private RoomEnvironmentSnapshot snapshot(Long id, Long roomId, ZonedDateTime windowStart) {
+    private RoomEnvironmentSnapshot snapshot(Long id, Long roomId, LocalDateTime windowStart) {
         return RoomEnvironmentSnapshot.builder()
                 .snapshotId(id)
                 .roomId(roomId)
@@ -38,7 +38,7 @@ class RoomEnvironmentSnapshotServiceTest {
 
     @Test
     void getRoomEnvironmentSnapshotReturnsSnapshot() {
-        RoomEnvironmentSnapshot snapshot = snapshot(1L, 7L, ZonedDateTime.now());
+        RoomEnvironmentSnapshot snapshot = snapshot(1L, 7L, LocalDateTime.now());
         when(roomEnvironmentSnapshotRepository.findById(1L)).thenReturn(Optional.of(snapshot));
 
         RoomEnvironmentSnapshot result = roomEnvironmentSnapshotService.getRoomEnvironmentSnapshot(1L);
@@ -54,7 +54,7 @@ class RoomEnvironmentSnapshotServiceTest {
 
     @Test
     void getRoomEnvironmentSnapshotByRoomIdReturnsSnapshots() {
-        RoomEnvironmentSnapshot snapshot = snapshot(1L, 7L, ZonedDateTime.now());
+        RoomEnvironmentSnapshot snapshot = snapshot(1L, 7L, LocalDateTime.now());
         when(roomEnvironmentSnapshotRepository.findByRoomId(7L)).thenReturn(List.of(snapshot));
 
         List<RoomEnvironmentSnapshot> result = roomEnvironmentSnapshotService.getRoomEnvironmentSnapshotByRoomId(7L);
@@ -70,7 +70,7 @@ class RoomEnvironmentSnapshotServiceTest {
 
     @Test
     void findSnapshotIdReturnsSnapshotWhenCovered() {
-        ZonedDateTime referenceAt = ZonedDateTime.now();
+        LocalDateTime referenceAt = LocalDateTime.now();
         RoomEnvironmentSnapshot snapshot = snapshot(1L, 7L, referenceAt);
         when(roomEnvironmentSnapshotRepository.findFirstByRoomIdAndWindowStartBetweenOrderByWindowStartAsc(
                 7L, referenceAt, referenceAt.plusMinutes(15))).thenReturn(Optional.of(snapshot));
@@ -82,7 +82,7 @@ class RoomEnvironmentSnapshotServiceTest {
 
     @Test
     void findSnapshotIdReturnsNullWhenNoneCovers() {
-        ZonedDateTime referenceAt = ZonedDateTime.now();
+        LocalDateTime referenceAt = LocalDateTime.now();
         when(roomEnvironmentSnapshotRepository.findFirstByRoomIdAndWindowStartBetweenOrderByWindowStartAsc(
                 any(), any(), any())).thenReturn(Optional.empty());
 
@@ -93,7 +93,7 @@ class RoomEnvironmentSnapshotServiceTest {
 
     @Test
     void getReferenceByIdReturnsProxy() {
-        RoomEnvironmentSnapshot proxy = snapshot(1L, 7L, ZonedDateTime.now());
+        RoomEnvironmentSnapshot proxy = snapshot(1L, 7L, LocalDateTime.now());
         when(roomEnvironmentSnapshotRepository.getReferenceById(1L)).thenReturn(proxy);
 
         RoomEnvironmentSnapshot result = roomEnvironmentSnapshotService.getReferenceById(1L);
@@ -104,7 +104,7 @@ class RoomEnvironmentSnapshotServiceTest {
     @Test
     void createWithReadingsSavesSnapshotAndSkipsUnknownMetrics() {
         Long roomId = 7L;
-        ZonedDateTime referenceAt = ZonedDateTime.now();
+        LocalDateTime referenceAt = LocalDateTime.now();
         when(roomEnvironmentSnapshotRepository.findFirstByRoomIdAndWindowStartBetweenOrderByWindowStartAsc(
                 any(), any(), any())).thenReturn(Optional.empty());
         RoomEnvironmentSnapshot savedSnapshot = snapshot(1L, roomId, referenceAt);
@@ -123,7 +123,7 @@ class RoomEnvironmentSnapshotServiceTest {
 
     @Test
     void createWithReadingsThrowsWhenReadingsIsNull() {
-        ZonedDateTime referenceAt = ZonedDateTime.now();
+        LocalDateTime referenceAt = LocalDateTime.now();
 
         assertThatThrownBy(() -> roomEnvironmentSnapshotService.createWithReadings(7L, referenceAt, null))
                 .isInstanceOf(NullPointerException.class);
@@ -131,7 +131,7 @@ class RoomEnvironmentSnapshotServiceTest {
 
     @Test
     void createWithReadingsThrowsWhenSnapshotAlreadyExists() {
-        ZonedDateTime referenceAt = ZonedDateTime.now();
+        LocalDateTime referenceAt = LocalDateTime.now();
         RoomEnvironmentSnapshot existing = snapshot(1L, 7L, referenceAt);
         when(roomEnvironmentSnapshotRepository.findFirstByRoomIdAndWindowStartBetweenOrderByWindowStartAsc(
                 any(), any(), any())).thenReturn(Optional.of(existing));

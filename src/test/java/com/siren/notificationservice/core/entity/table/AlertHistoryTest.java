@@ -4,7 +4,7 @@ import com.siren.notificationservice.core.entity.domain.AlertType;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -12,7 +12,7 @@ class AlertHistoryTest {
 
     @Test
     void builderSetsAllFields() {
-        ZonedDateTime sentAt = ZonedDateTime.now();
+        LocalDateTime sentAt = LocalDateTime.now();
 
         AlertHistory alertHistory = AlertHistory.builder()
                 .roomId(7L)

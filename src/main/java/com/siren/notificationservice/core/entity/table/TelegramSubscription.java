@@ -1,10 +1,11 @@
 package com.siren.notificationservice.core.entity.table;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.entity.domain.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "telegram_subscription",
@@ -32,10 +33,17 @@ public class TelegramSubscription {
     private boolean active; // 봇 차단 시 false (my_chat_member 웹훅으로 갱신)
 
     @Column(name = "created_at", nullable = false)
-    private ZonedDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "user_id", nullable = false)
     private Long userId; // Account API 소유 유저 id (bare, 로컬 FK 없음)
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_role", nullable = false, length = 20)
+    private UserRole userRole;
+
+    @Column(name = "role_updated_at")
+    private LocalDateTime roleUpdatedAt;
 
     /**
      * 봇 차단을 반영한다. {@code my_chat_member} 웹훅 이벤트 수신 시 호출된다.
@@ -52,10 +60,22 @@ public class TelegramSubscription {
     }
 
     /**
+     * Account에서 보내주는 role 변경을 반영한다. rabbitmq를 통해 이벤트 수신 시 호출된다.
+     */
+    public void updateUserRole(UserRole userRole, LocalDateTime roleUpdatedAt) {
+        if(this.roleUpdatedAt != null && !roleUpdatedAt.isAfter(this.roleUpdatedAt)) {
+            return;
+        }
+        this.userRole = userRole;
+        this.roleUpdatedAt = roleUpdatedAt;
+    }
+
+    /**
      * 최초 연동시 chatId/createdAt 채워줌
      */
-    public void link(String chatId, ZonedDateTime createdAt) {
+    public void link(String chatId, LocalDateTime createdAt) {
         this.chatId = chatId;
         this.createdAt = createdAt;
+        this.active = true;
     }
 }

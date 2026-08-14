@@ -3,6 +3,7 @@ package com.siren.notificationservice.telegram.routing.handler.impl;
 import com.siren.notificationservice.core.client.CoreApiClient;
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
 import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
+import com.siren.notificationservice.core.dto.response.RoomSubResponse;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.domain.SensorType;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
@@ -54,10 +55,10 @@ class FeedbackRouteHandlerTest {
     }
 
     private UserRoomSubResponse subscribedRooms(int count) {
-        List<UserRoomSubResponse.RoomSubResponse> rooms = count == 1
-                ? List.of(new UserRoomSubResponse.RoomSubResponse(7L, "301호", true))
-                : List.of(new UserRoomSubResponse.RoomSubResponse(7L, "301호", true),
-                        new UserRoomSubResponse.RoomSubResponse(8L, "302호", true));
+        List<RoomSubResponse> rooms = count == 1
+                ? List.of(new RoomSubResponse(7L, "301호", true))
+                : List.of(new RoomSubResponse(7L, "301호", true),
+                        new RoomSubResponse(8L, "302호", true));
         return new UserRoomSubResponse(1L, rooms);
     }
 
@@ -99,7 +100,7 @@ class FeedbackRouteHandlerTest {
         feedbackRouteHandler.handle(event, 1L);
 
         verify(feedbackProcessingEventPublisher).publish(any());
-        verify(telegramMessageService).sendFeedbackAcknowledgeMessage(event.chatId(), BotType.USER_BOT);
+        verify(telegramMessageService).sendFeedbackAcknowledgeMessage(event.chatId(), BotType.USER_BOT, "301호");
     }
 
     @Test
@@ -113,7 +114,7 @@ class FeedbackRouteHandlerTest {
         feedbackRouteHandler.handle(event, 1L);
 
         verify(telegramMessageService).sendFeedbackProcessingFailedMessage(event.chatId(), BotType.USER_BOT);
-        verify(telegramMessageService, never()).sendFeedbackAcknowledgeMessage(any(), any());
+        verify(telegramMessageService, never()).sendFeedbackAcknowledgeMessage(any(), any(), any());
     }
 
     @Test
@@ -154,7 +155,7 @@ class FeedbackRouteHandlerTest {
         feedbackRouteHandler.handleUserReply(event, 1L, cache);
 
         verify(feedbackExtractionCacheService).clear(1L);
-        verify(telegramMessageService).sendFeedbackAcknowledgeMessage(event.chatId(), BotType.USER_BOT);
+        verify(telegramMessageService).sendFeedbackAcknowledgeMessage(event.chatId(), BotType.USER_BOT, "301호");
     }
 
     @Test

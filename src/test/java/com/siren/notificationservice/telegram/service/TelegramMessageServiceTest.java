@@ -102,4 +102,22 @@ class TelegramMessageServiceTest {
         assertThat(markup.getKeyboard()).hasSize(2);
         assertThat(markup.getKeyboard().get(0).get(0).getCallbackData()).isEqualTo("FB_ROOM:301호");
     }
+
+    @Test
+    void sendFeedbackAcknowledgeMessageIncludesRoomNameWhenPresent() throws Exception {
+        telegramMessageService.sendFeedbackAcknowledgeMessage("100", BotType.USER_BOT, "301호");
+
+        ArgumentCaptor<SendMessage> captor = ArgumentCaptor.forClass(SendMessage.class);
+        verify(memberTelegramSender).execute(captor.capture());
+        assertThat(captor.getValue().getText()).contains("301호");
+    }
+
+    @Test
+    void sendFeedbackAcknowledgeMessageFallsBackWhenRoomNameMissing() throws Exception {
+        telegramMessageService.sendFeedbackAcknowledgeMessage("100", BotType.USER_BOT, null);
+
+        ArgumentCaptor<SendMessage> captor = ArgumentCaptor.forClass(SendMessage.class);
+        verify(memberTelegramSender).execute(captor.capture());
+        assertThat(captor.getValue().getText()).isEqualTo("의견을 반영하여 더 나은 강의실 환경을 만들겠습니다.");
+    }
 }

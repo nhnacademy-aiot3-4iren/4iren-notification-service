@@ -1,7 +1,7 @@
 package com.siren.notificationservice.core.service;
 
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
-import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
+import com.siren.notificationservice.core.dto.response.RoomSubResponse;
 import com.siren.notificationservice.core.service.cache.LastMentionedRoomService;
 import org.junit.jupiter.api.Test;
 
@@ -10,19 +10,16 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class FeedbackRoomResolverTest {
 
     private final LastMentionedRoomService lastMentionedRoomService = mock(LastMentionedRoomService.class);
     private final FeedbackRoomResolver feedbackRoomResolver = new FeedbackRoomResolver(lastMentionedRoomService);
 
-    private final List<UserRoomSubResponse.RoomSubResponse> subscribedRooms = List.of(
-            new UserRoomSubResponse.RoomSubResponse(1L, "301호", true),
-            new UserRoomSubResponse.RoomSubResponse(2L, "302호", true)
+    private final List<RoomSubResponse> subscribedRooms = List.of(
+            new RoomSubResponse(1L, "301호", true),
+            new RoomSubResponse(2L, "302호", true)
     );
 
     @Test
@@ -47,7 +44,7 @@ class FeedbackRoomResolverTest {
     @Test
     void resolveFallsBackToOnlySubscriptionWhenNoMentionAndNoCache() {
         when(lastMentionedRoomService.find(1L)).thenReturn(Optional.empty());
-        List<UserRoomSubResponse.RoomSubResponse> onlyOneRoom = List.of(subscribedRooms.get(0));
+        List<RoomSubResponse> onlyOneRoom = List.of(subscribedRooms.get(0));
 
         Optional<Long> result = feedbackRoomResolver.resolve(null, 1L, onlyOneRoom);
 

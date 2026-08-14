@@ -28,9 +28,12 @@ public class FeedbackCallbackHandler implements CallbackRouteHandler {
     public void handle(TelegramInboundEvent event, Long userId) {
         Optional<FeedbackExtractionCache> cache = feedbackExtractionCacheService.find(userId);
         if(cache.isEmpty()) {
-            telegramMessageService.sendFeedbackProcessingFailedMessage(event.chatId(), event.botType());
+            telegramMessageService.sendFeedbackAlreadyHandledMessage(event.chatId(), event.botType());
             return;
         }
+
+        Integer messageId = event.update().getCallbackQuery().getMessage().getMessageId();
+        telegramMessageService.removeInlineKeyboard(event.chatId(), messageId, event.botType());
         feedbackRouteHandler.handleUserReply(event, userId, cache.get());
     }
 }

@@ -10,7 +10,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -51,7 +51,7 @@ public class FeedbackLogRetentionService {
      * 보관 기간이 지난 feedback_log를 지우고, 그로 인해 참조가 끊긴 고아 스냅샷(실내 환경/외부 날씨)까지 정리한다.
      */
     public void purgeFeedbackLogs() {
-        ZonedDateTime cutoff = ZonedDateTime.now(ZONE).minusDays(retentionDays);
+        LocalDateTime cutoff = LocalDateTime.now(ZONE).minusDays(retentionDays);
         purgeOldLogs(cutoff);                    // 1) 오래된 feedback_log (feedback_score는 V16 cascade로 함께 삭제)
         purgeOrphanRoomEnvironmentSnapshots();   // 2) 참조 끊긴 실내 환경 스냅샷 (reading은 V16 cascade로 함께 삭제)
         purgeOrphanOutsideWeatherSnapshots();    // 3) 참조 끊긴 외부 날씨 스냅샷
@@ -60,7 +60,7 @@ public class FeedbackLogRetentionService {
     /**
      * 보관 기간이 지난 feedback_log를 청크 단위로 삭제한다. 각 청크는 독립 트랜잭션이라 대량 삭제여도 롱 트랜잭션, 락 홀드, 복제 지연을 피한다.
      */
-    private void purgeOldLogs(ZonedDateTime cutoff) {
+    private void purgeOldLogs(LocalDateTime cutoff) {
         int total = 0;
         while (true) {
             List<Long> ids = feedbackLogRepository.findOldLogIds(cutoff, batchSize);

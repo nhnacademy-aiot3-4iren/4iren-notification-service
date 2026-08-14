@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,7 +25,7 @@ public interface AlertHistoryRepository extends JpaRepository<AlertHistory, Long
      */
     @Modifying
     @Query(value = "DELETE FROM alert_history WHERE send_at < :cutoff LIMIT :batchSize", nativeQuery = true)
-    int deleteBatch(@Param("cutoff") ZonedDateTime cutoff, @Param("batchSize") int batchSize);
+    int deleteBatch(@Param("cutoff") LocalDateTime cutoff, @Param("batchSize") int batchSize);
 
     /**
      * filter option 보여주기

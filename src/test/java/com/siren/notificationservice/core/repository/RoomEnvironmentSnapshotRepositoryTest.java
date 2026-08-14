@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +28,7 @@ class RoomEnvironmentSnapshotRepositoryTest {
     @Test
     void findsFirstSnapshotCoveringReferenceTime() {
 
-        ZonedDateTime windowStart = ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+        LocalDateTime windowStart = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         roomEnvironmentSnapshotRepository.save(createRoomEnvironmentSnapshot(3L, windowStart));
 
         Optional<RoomEnvironmentSnapshot> found = roomEnvironmentSnapshotRepository
@@ -40,7 +40,7 @@ class RoomEnvironmentSnapshotRepositoryTest {
 
     @Test
     void findsNothingWhenReferenceTimeIsOutsideCoverage() {
-        ZonedDateTime windowStart = ZonedDateTime.now();
+        LocalDateTime windowStart = LocalDateTime.now();
         roomEnvironmentSnapshotRepository.save(createRoomEnvironmentSnapshot(3L, windowStart));
 
         Optional<RoomEnvironmentSnapshot> found = roomEnvironmentSnapshotRepository
@@ -52,16 +52,16 @@ class RoomEnvironmentSnapshotRepositoryTest {
 
     @Test
     void findsAllSnapshotsForRoom() {
-        roomEnvironmentSnapshotRepository.save(createRoomEnvironmentSnapshot(3L, ZonedDateTime.now()));
-        roomEnvironmentSnapshotRepository.save(createRoomEnvironmentSnapshot(3L, ZonedDateTime.now().plusMinutes(15)));
-        roomEnvironmentSnapshotRepository.save(createRoomEnvironmentSnapshot(4L, ZonedDateTime.now()));
+        roomEnvironmentSnapshotRepository.save(createRoomEnvironmentSnapshot(3L, LocalDateTime.now()));
+        roomEnvironmentSnapshotRepository.save(createRoomEnvironmentSnapshot(3L, LocalDateTime.now().plusMinutes(15)));
+        roomEnvironmentSnapshotRepository.save(createRoomEnvironmentSnapshot(4L, LocalDateTime.now()));
 
         List<RoomEnvironmentSnapshot> found = roomEnvironmentSnapshotRepository.findByRoomId(3L);
 
         assertThat(found).hasSize(2);
     }
 
-    private RoomEnvironmentSnapshot createRoomEnvironmentSnapshot(Long roomId, ZonedDateTime windowStart) {
+    private RoomEnvironmentSnapshot createRoomEnvironmentSnapshot(Long roomId, LocalDateTime windowStart) {
         return RoomEnvironmentSnapshot.builder().roomId(roomId).windowStart(windowStart).build();
     }
 }

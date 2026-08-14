@@ -1,17 +1,20 @@
 package com.siren.notificationservice.telegram.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.entity.domain.UserRole;
 import com.siren.notificationservice.core.entity.table.TelegramSubscription;
 import com.siren.notificationservice.core.exception.MissingChatIdException;
 import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
 import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
 import com.siren.notificationservice.telegram.config.TelegramBotProperties;
+import com.siren.notificationservice.telegram.dto.LinkTokenData;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Duration;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,18 +36,20 @@ class TelegramLinkTokenServiceTest {
             new TelegramBotProperties.BotCredentials("member-token", "member_bot"),
             new TelegramBotProperties.WebHook("https://example.com")
     );
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final TelegramLinkTokenService telegramLinkTokenService =
-            new TelegramLinkTokenService(stringRedisTemplate, telegramSubscriptionRepository, telegramBotProperties);
+            new TelegramLinkTokenService(stringRedisTemplate, telegramSubscriptionRepository, telegramBotProperties, objectMapper);
 
     @Test
     void getDeepLinkUrlBuildsUrlAndIssuesToken() {
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
 
-        String url = telegramLinkTokenService.getDeepLinkUrl(1L, BotType.ADMIN_BOT);
+        String url = telegramLinkTokenService.getDeepLinkUrl(new LinkTokenData(1L, UserRole.ADMIN), BotType.ADMIN_BOT);
 
         assertThat(url).startsWith("https://t.me/admin_bot?start=");
         verify(valueOperations).set(
-                argThat(key -> key.startsWith("telegram:link-token:ADMIN_BOT:")), eq("1"), eq(Duration.ofMinutes(5)));
+                argThat(key -> key.startsWith("telegram:link-token:ADMIN_BOT:")),
+                argThat(value -> value.contains("\"userId\":1")), eq(Duration.ofMinutes(5)));
     }
 
     @Test
@@ -69,11 +74,14 @@ class TelegramLinkTokenServiceTest {
     @Test
     void consumeTokenReturnsUserIdAndDeletesToken() {
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.getAndDelete("telegram:link-token:USER_BOT:abc")).thenReturn("1");
+        when(valueOperations.getAndDelete("telegram:link-token:USER_BOT:abc"))
+                .thenReturn("{\"userId\":1,\"role\":\"NORMAL\"}");
 
-        Optional<Long> userId = telegramLinkTokenService.consumeToken("abc", BotType.USER_BOT);
+        Optional<LinkTokenData> data = telegramLinkTokenService.consumeToken("abc", BotType.USER_BOT);
 
-        assertThat(userId).contains(1L);
+        assertThat(data).isPresent();
+        assertThat(data.get().userId()).isEqualTo(1L);
+        assertThat(data.get().role()).isEqualTo(UserRole.NORMAL);
     }
 
     @Test
@@ -81,19 +89,19 @@ class TelegramLinkTokenServiceTest {
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.getAndDelete("telegram:link-token:USER_BOT:abc")).thenReturn(null);
 
-        Optional<Long> userId = telegramLinkTokenService.consumeToken("abc", BotType.USER_BOT);
+        Optional<LinkTokenData> data = telegramLinkTokenService.consumeToken("abc", BotType.USER_BOT);
 
-        assertThat(userId).isEmpty();
+        assertThat(data).isEmpty();
     }
 
     @Test
-    void consumeTokenReturnsEmptyWhenStoredValueIsNotANumber() {
+    void consumeTokenReturnsEmptyWhenStoredValueIsCorrupted() {
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.getAndDelete("telegram:link-token:USER_BOT:abc")).thenReturn("깨진값");
 
-        Optional<Long> userId = telegramLinkTokenService.consumeToken("abc", BotType.USER_BOT);
+        Optional<LinkTokenData> data = telegramLinkTokenService.consumeToken("abc", BotType.USER_BOT);
 
-        assertThat(userId).isEmpty();
+        assertThat(data).isEmpty();
     }
 
     @Test
@@ -106,7 +114,7 @@ class TelegramLinkTokenServiceTest {
     @Test
     void getUserIdByChatIdReturnsLinkedUserId() {
         TelegramSubscription subscription = TelegramSubscription.builder()
-                .userId(5L).botType(BotType.USER_BOT).chatId("100").active(true).createdAt(ZonedDateTime.now()).build();
+                .userId(5L).botType(BotType.USER_BOT).chatId("100").active(true).createdAt(LocalDateTime.now()).build();
         when(telegramSubscriptionRepository.findByChatIdAndBotType("100", BotType.USER_BOT)).thenReturn(Optional.of(subscription));
 
         Long userId = telegramLinkTokenService.getUserIdByChatId("100", BotType.USER_BOT);

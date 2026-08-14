@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
@@ -27,7 +27,7 @@ class OutsideWeatherSnapshotRepositoryTest {
     @Test
     void findsSnapshotByRegionAndWindowStart() {
 
-        ZonedDateTime windowStart = ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+        LocalDateTime windowStart = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         outsideWeatherSnapshotRepository.save(OutsideWeatherSnapshot.builder()
                 .nx(60).ny(127).windowStart(windowStart).build());
 
@@ -39,7 +39,7 @@ class OutsideWeatherSnapshotRepositoryTest {
 
     @Test
     void findsNothingWhenRegionDoesNotMatch() {
-        ZonedDateTime windowStart = ZonedDateTime.now();
+        LocalDateTime windowStart = LocalDateTime.now();
         outsideWeatherSnapshotRepository.save(OutsideWeatherSnapshot.builder()
                 .nx(60).ny(127).windowStart(windowStart).build());
 

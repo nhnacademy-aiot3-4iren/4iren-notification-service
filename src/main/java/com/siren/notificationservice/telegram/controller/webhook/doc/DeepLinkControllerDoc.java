@@ -1,5 +1,6 @@
 package com.siren.notificationservice.telegram.controller.webhook.doc;
 
+import com.siren.notificationservice.core.entity.domain.UserRole;
 import com.siren.notificationservice.telegram.dto.response.LinkStatusResponse;
 import com.siren.notificationservice.telegram.dto.response.LinkTokenResponse;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
@@ -28,7 +29,8 @@ public interface DeepLinkControllerDoc {
     )
     @ApiResponse(responseCode = "200", description = "딥링크 발급 성공")
     @PostMapping("/telegram/admin/link-token")
-    ResponseEntity<LinkTokenResponse> linkAdminToken(@Parameter(description = "Gateway가 JWT 검증 후 전달하는 유저 id", required = true) @RequestHeader("X-USER-ID") Long userId);
+    ResponseEntity<LinkTokenResponse> linkAdminToken(@Parameter(description = "Gateway가 JWT 검증 후 전달하는 유저 id", required = true) @RequestHeader("X-USER-ID") Long userId,
+                                                     @Parameter(description = "Gateway가 JWT 검증 후 전달하는 유저 role", required = true) @RequestHeader("X-USER-ROLE")UserRole userRole);
 
     /**
      * MemberBot에 연결하기 위한 DeepLink 제공
@@ -40,7 +42,8 @@ public interface DeepLinkControllerDoc {
     )
     @ApiResponse(responseCode = "200", description = "딥링크 발급 성공")
     @PostMapping("/telegram/member/link-token")
-    ResponseEntity<LinkTokenResponse> linkMemberToken(@Parameter(description = "Gateway가 JWT 검증 후 전달하는 유저 id", required = true) @RequestHeader("X-USER-ID") Long userId);
+    ResponseEntity<LinkTokenResponse> linkMemberToken(@Parameter(description = "Gateway가 JWT 검증 후 전달하는 유저 id", required = true) @RequestHeader("X-USER-ID") Long userId,
+                                                      @Parameter(description = "Gateway가 JWT 검증 후 전달하는 유저 role", required = true) @RequestHeader("X-USER-ROLE")UserRole userRole);
 
     /**
      * Admin 봇 연동 여부 조회. 딥링크 토큰 발급 전, 프론트가 "이미 연동되어 있습니다,

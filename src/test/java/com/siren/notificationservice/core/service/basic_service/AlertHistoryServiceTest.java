@@ -6,6 +6,7 @@ import com.siren.notificationservice.core.dto.request.AlertHistorySearchConditio
 import com.siren.notificationservice.core.dto.response.AlertHistoryFilterOptionsResponse;
 import com.siren.notificationservice.core.dto.response.AlertHistoryResponse;
 import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
+import com.siren.notificationservice.core.dto.response.RoomSubResponse;
 import com.siren.notificationservice.core.entity.domain.AlertType;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.table.AlertHistory;
@@ -18,7 +19,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -45,7 +46,7 @@ class AlertHistoryServiceTest {
                 .alertType(AlertType.SENSOR_ANOMALY)
                 .eventId(eventId)
                 .message("센서 이상")
-                .sendAt(ZonedDateTime.now())
+                .sendAt(LocalDateTime.now())
                 .userId(userId)
                 .build();
     }
@@ -113,8 +114,8 @@ class AlertHistoryServiceTest {
         when(alertHistoryRepository.findAlertTypesByUserId(100L))
                 .thenReturn(List.of(AlertType.SENSOR_ANOMALY, AlertType.VENTILATION_RECOMMEND));
         when(coreApiClient.getRoomSubscriptions(100L)).thenReturn(new UserRoomSubResponse(100L, List.of(
-                new UserRoomSubResponse.RoomSubResponse(7L, "302호", true),
-                new UserRoomSubResponse.RoomSubResponse(9L, "강의실 A", false)
+                new RoomSubResponse(7L, "302호", true),
+                new RoomSubResponse(9L, "강의실 A", false)
         )));
 
         AlertHistoryFilterOptionsResponse options = alertHistoryService.getFilterOptions(100L);

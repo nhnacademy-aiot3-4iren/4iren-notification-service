@@ -2,7 +2,7 @@ package com.siren.notificationservice.core.exception;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -10,7 +10,7 @@ class OutsideWeatherSnapshotAlreadyExistsExceptionTest {
 
     @Test
     void messageContainsNxNyAndWindowStart() {
-        ZonedDateTime windowStart = ZonedDateTime.now();
+        LocalDateTime windowStart = LocalDateTime.now();
 
         OutsideWeatherSnapshotAlreadyExistsException exception =
                 new OutsideWeatherSnapshotAlreadyExistsException(60, 127, windowStart);

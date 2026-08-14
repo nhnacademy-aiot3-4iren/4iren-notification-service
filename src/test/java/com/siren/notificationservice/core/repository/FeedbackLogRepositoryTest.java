@@ -7,7 +7,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.TestPropertySource;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -53,7 +53,7 @@ class FeedbackLogRepositoryTest {
         return FeedbackLog.builder()
                 .roomId(7L)
                 .rawText("더워요")
-                .createdAt(ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS))
+                .createdAt(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS))
                 .userId(1L)
                 .delayed(false).build();
     }

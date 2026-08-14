@@ -1,8 +1,10 @@
 package com.siren.notificationservice.telegram.service;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.entity.domain.UserRole;
 import com.siren.notificationservice.core.entity.table.TelegramSubscription;
 import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
+import com.siren.notificationservice.telegram.dto.LinkTokenData;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import org.junit.jupiter.api.Test;
 import org.telegram.telegrambots.meta.api.objects.Chat;
@@ -13,7 +15,7 @@ import org.telegram.telegrambots.meta.api.objects.chatmember.ChatMember;
 import org.telegram.telegrambots.meta.api.objects.chatmember.ChatMemberBanned;
 import org.telegram.telegrambots.meta.api.objects.chatmember.ChatMemberMember;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,14 +57,14 @@ class TelegramInboundSubServiceTest {
     @Test
     void handleValidStartLinksExistingSubscription() {
         TelegramSubscription existing = TelegramSubscription.builder()
-                .userId(1L).botType(BotType.USER_BOT).chatId("old-chat").active(false).createdAt(ZonedDateTime.now()).build();
+                .userId(1L).botType(BotType.USER_BOT).chatId("old-chat").active(false).createdAt(LocalDateTime.now()).build();
         when(telegramSubscriptionRepository.findByUserIdAndBotType(1L, BotType.USER_BOT)).thenReturn(Optional.of(existing));
         TelegramInboundEvent event = startEvent("100");
 
-        telegramInboundSubService.handleValidStart(event, 1L);
+        telegramInboundSubService.handleValidStart(event, new LinkTokenData(1L, UserRole.NORMAL));
 
         assertThat(existing.getChatId()).isEqualTo("100");
-        assertThat(existing.isActive()).isFalse(); // link()는 active를 안 건드림, 별도 unblock 필요
+        assertThat(existing.isActive()).isTrue(); // link()가 재연동 시 active를 다시 켠다(봉쇄 후 딥링크 재연동 복구)
     }
 
     @Test
@@ -70,7 +72,7 @@ class TelegramInboundSubServiceTest {
         when(telegramSubscriptionRepository.findByUserIdAndBotType(1L, BotType.USER_BOT)).thenReturn(Optional.empty());
         TelegramInboundEvent event = startEvent("100");
 
-        telegramInboundSubService.handleValidStart(event, 1L);
+        telegramInboundSubService.handleValidStart(event, new LinkTokenData(1L, UserRole.NORMAL));
 
         verify(telegramSubscriptionRepository).save(argThat(sub ->
                 sub.getUserId().equals(1L) && sub.getChatId().equals("100") && sub.isActive()));
@@ -79,7 +81,7 @@ class TelegramInboundSubServiceTest {
     @Test
     void handleBlockedBotDeactivatesSubscriptionWhenBanned() {
         TelegramSubscription subscription = TelegramSubscription.builder()
-                .userId(1L).botType(BotType.USER_BOT).chatId("100").active(true).createdAt(ZonedDateTime.now()).build();
+                .userId(1L).botType(BotType.USER_BOT).chatId("100").active(true).createdAt(LocalDateTime.now()).build();
         when(telegramSubscriptionRepository.findByChatIdAndBotType("100", BotType.USER_BOT)).thenReturn(Optional.of(subscription));
         TelegramInboundEvent event = myChatMemberEvent("100", new ChatMemberBanned());
 
@@ -91,7 +93,7 @@ class TelegramInboundSubServiceTest {
     @Test
     void handleBlockedBotReactivatesSubscriptionWhenUnblocked() {
         TelegramSubscription subscription = TelegramSubscription.builder()
-                .userId(1L).botType(BotType.USER_BOT).chatId("100").active(false).createdAt(ZonedDateTime.now()).build();
+                .userId(1L).botType(BotType.USER_BOT).chatId("100").active(false).createdAt(LocalDateTime.now()).build();
         when(telegramSubscriptionRepository.findByChatIdAndBotType("100", BotType.USER_BOT)).thenReturn(Optional.of(subscription));
         TelegramInboundEvent event = myChatMemberEvent("100", new ChatMemberMember());
 

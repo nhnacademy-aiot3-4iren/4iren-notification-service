@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Scope;
 
 
 @Configuration
@@ -28,6 +29,8 @@ public class ChatClientConfig {
         return ChatClient.builder(geminiChatModel)
                 .defaultAdvisors(new SimpleLoggerAdvisor());
     }
+
+    @Scope("prototype") // 빈 주입때마다 매번 새로운 인스턴스!
     @Bean
     public ChatClient.Builder geminiJsonChatClientBuilder(
             @Qualifier("googleGenAiChatModel") ChatModel geminiChatModel) {

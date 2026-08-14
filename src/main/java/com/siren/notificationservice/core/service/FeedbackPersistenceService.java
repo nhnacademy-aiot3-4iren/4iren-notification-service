@@ -19,9 +19,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
@@ -44,16 +44,16 @@ public class FeedbackPersistenceService {
      * 피드백을 DB에 저장한다. 강의실 실측값/외부 날씨 조회는 각각 독립적으로 실패할 수 있고,
      * 실패해도 스냅샷 없이 피드백 저장은 계속 진행한다.
      */
-    public void persist(FeedbackProcessingEvent event, ZonedDateTime referenceAt) {
+    public void persist(FeedbackProcessingEvent event, LocalDateTime referenceAt) {
         // 강의실 환경 조회 or 생성
         RoomEnvironmentSnapshot sensorSnapshot = findRoomEnvironmentSnapshot(event.roomId(), referenceAt);
         // 외부 날씨 조회
         OutsideWeatherSnapshot outsideSnapshot = findOutsideWeatherSnapshot(event.roomId(), referenceAt);
 
         // event의 시각들은 큐 안에서만 도는 LocalDateTime이지만, FeedbackLog 엔티티 컬럼은
-        // ZonedDateTime이라 여기(DB로 넘어가는 경계)서 변환한다.
-        ZonedDateTime createdAt = event.receivedAt().atZone(SERVICE_ZONE);
-        ZonedDateTime experiencedAt = event.experiencedAt() != null ? event.experiencedAt().atZone(SERVICE_ZONE) : null;
+        // LocalDateTime이라 여기(DB로 넘어가는 경계)서 변환한다.
+        LocalDateTime createdAt = event.receivedAt();
+        LocalDateTime experiencedAt = event.experiencedAt() != null ? event.experiencedAt() : null;
 
         feedbackLogService.createFeedbackLogWithScores(
                 event.userId(),
@@ -68,12 +68,12 @@ public class FeedbackPersistenceService {
         );
     }
 
-    private RoomEnvironmentSnapshot findRoomEnvironmentSnapshot(Long roomId, ZonedDateTime referenceAt) {
+    private RoomEnvironmentSnapshot findRoomEnvironmentSnapshot(Long roomId, LocalDateTime referenceAt) {
         RoomEnvironmentSnapshot sensorSnapshot = roomEnvironmentSnapshotService.findSnapshotId(roomId, referenceAt);
 
         if(sensorSnapshot == null) {
             RoomEnvironmentReadingResponse readings = fetchOrNull("강의실 실측값", roomId, referenceAt,
-                    ()-> coreApiClient.getRoomSensorsReadings(roomId, referenceAt.toLocalDateTime()));
+                    ()-> coreApiClient.getRoomSensorsReadings(roomId, referenceAt));
             sensorSnapshot = readings != null
                     ? roomEnvironmentSnapshotService.createWithReadings(roomId, referenceAt, readings)
                     : null;
@@ -90,17 +90,17 @@ public class FeedbackPersistenceService {
      * 있으면 -> 리턴
      * 없으면 -> Core 호출
      */
-    private OutsideWeatherSnapshot findOutsideWeatherSnapshot(Long roomId, ZonedDateTime referenceAt) {
+    private OutsideWeatherSnapshot findOutsideWeatherSnapshot(Long roomId, LocalDateTime referenceAt) {
         RoomWeatherRegion region = regionCacheService.find(roomId).orElse(null);
         OutsideWeatherSnapshot outsideSnapshot = null;
 
         if(region != null) {
-            outsideSnapshot = outsideWeatherSnapshotService.findSnapshotId(region.nx(), region.ny(), referenceAt);
+            outsideSnapshot = outsideWeatherSnapshotService.findSnapshotId(region.nx(), region.ny(), toKmaWindow(referenceAt));
         }
 
         if(outsideSnapshot == null) {
             OutsideWeather weather = fetchOrNull("외부 날씨", roomId, referenceAt,
-                    ()-> coreApiClient.getOutsideWeather(roomId, referenceAt.toLocalDateTime()));
+                    ()-> coreApiClient.getOutsideWeather(roomId, referenceAt));
             if(weather != null) {
                 outsideSnapshot = createWeatherSnapshot(weather);
             }
@@ -124,16 +124,16 @@ public class FeedbackPersistenceService {
      * 더 확인하는 이유: 다른 강의실이 그 사이 먼저 만들었을 수 있어서(중복 생성 예외 방지).
      */
     private OutsideWeatherSnapshot createWeatherSnapshot(OutsideWeather weather) {
-        ZonedDateTime windowStart;
+        LocalDateTime windowStart;
         try {
-            windowStart = LocalDateTime.parse(weather.baseDateTime(), BASE_DATE_TIME_FORMAT).atZone(SERVICE_ZONE);
+            windowStart = LocalDateTime.parse(weather.baseDateTime(), BASE_DATE_TIME_FORMAT);
         } catch (DateTimeParseException e) {
             // baseDateTime 형식이 예상과 다르면 이 피드백의 날씨 스냅샷만 포기한다.
             log.warn("[FeedbackPersistenceService] baseDateTime 파싱 실패, 외부 날씨 스냅샷 생략 (baseDateTime={})", weather.baseDateTime(), e);
             return null;
         }
 
-        ZonedDateTime finalWindowStart = windowStart;
+        LocalDateTime finalWindowStart = windowStart;
         OutsideWeatherSnapshot snapshot = outsideWeatherSnapshotService.findSnapshotId(weather.nx(), weather.ny(), finalWindowStart);
 
         return snapshot != null ? snapshot : outsideWeatherSnapshotService.createOutsideWeatherSnapshot(weather.nx(), weather.ny(), finalWindowStart, parseNumeric(weather.temperature()), parseNumeric(weather.humidity()));
@@ -157,7 +157,11 @@ public class FeedbackPersistenceService {
         }
     }
 
-    private <T> T fetchOrNull(String label, Long roomId, ZonedDateTime referenceAt, Supplier<T> call) {
+    private LocalDateTime toKmaWindow(LocalDateTime referenceAt) {
+        return referenceAt.minusMinutes(10).truncatedTo(ChronoUnit.HOURS);
+    }
+
+    private <T> T fetchOrNull(String label, Long roomId, LocalDateTime referenceAt, Supplier<T> call) {
         try{
             return call.get();
         }catch (CoreApiUnavailableException e){

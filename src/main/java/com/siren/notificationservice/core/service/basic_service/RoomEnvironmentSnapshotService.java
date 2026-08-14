@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -48,7 +48,7 @@ public class RoomEnvironmentSnapshotService {
     /**
      * referenceAt을 커버하는 스냅샷이 있으면 그 id를, 없으면 null을 반환한다.
      */
-    public RoomEnvironmentSnapshot findSnapshotId(Long roomId, ZonedDateTime referenceAt) {
+    public RoomEnvironmentSnapshot findSnapshotId(Long roomId, LocalDateTime referenceAt) {
         Objects.requireNonNull(roomId, "roomId는 null일 수 없습니다.");
         Objects.requireNonNull(referenceAt, "referenceAt은 null일 수 없습니다.");
         return roomEnvironmentSnapshotRepository
@@ -68,7 +68,7 @@ public class RoomEnvironmentSnapshotService {
      * Snapshot과 Reading들을 하나의 트랜잭션으로 저장한다(둘이 원자적으로 묶여야 함).
      */
     @Transactional
-    public RoomEnvironmentSnapshot createWithReadings(Long roomId, ZonedDateTime referenceAt, RoomEnvironmentReadingResponse readings) {
+    public RoomEnvironmentSnapshot createWithReadings(Long roomId, LocalDateTime referenceAt, RoomEnvironmentReadingResponse readings) {
         Objects.requireNonNull(readings, "readings는 null일 수 없습니다.");
         RoomEnvironmentSnapshot snapshot = createRoomEnvironmentSnapshot(roomId, referenceAt);
 
@@ -83,7 +83,7 @@ public class RoomEnvironmentSnapshotService {
     /**
      * 강의실의 새 스냅샷을 만든다. 같은 referenceAt이 이미 있으면 예외를 던진다.
      */
-    private RoomEnvironmentSnapshot createRoomEnvironmentSnapshot(Long roomId, ZonedDateTime referenceAt) {
+    private RoomEnvironmentSnapshot createRoomEnvironmentSnapshot(Long roomId, LocalDateTime referenceAt) {
         Objects.requireNonNull(roomId, "roomId는 null일 수 없습니다.");
         Objects.requireNonNull(referenceAt, "referenceAt은 null일 수 없습니다.");
         if (findSnapshotId(roomId, referenceAt) != null) {

@@ -3,7 +3,7 @@ package com.siren.notificationservice.core.entity.table;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,7 +11,7 @@ class OutsideWeatherSnapshotTest {
 
     @Test
     void builderSetsAllFields() {
-        ZonedDateTime windowStart = ZonedDateTime.now();
+        LocalDateTime windowStart = LocalDateTime.now();
 
         OutsideWeatherSnapshot snapshot = OutsideWeatherSnapshot.builder()
                 .nx(60)

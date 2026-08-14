@@ -13,7 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -38,7 +38,7 @@ public class FeedbackLogService {
 
     private FeedbackLog createFeedbackLog(Long userId, Long roomId, RoomEnvironmentSnapshot snapshot,
                                            OutsideWeatherSnapshot outsideWeatherSnapshot, String rawText,
-                                           ZonedDateTime createdAt, boolean delayed, ZonedDateTime experiencedAt) {
+                                           LocalDateTime createdAt, boolean delayed, LocalDateTime experiencedAt) {
         Objects.requireNonNull(userId, "userId는 null일 수 없습니다.");
         Objects.requireNonNull(roomId, "roomId는 null일 수 없습니다.");
         Objects.requireNonNull(rawText, "rawText는 null일 수 없습니다.");
@@ -61,7 +61,7 @@ public class FeedbackLogService {
     @Transactional
     public void createFeedbackLogWithScores(Long userId, Long roomId, RoomEnvironmentSnapshot snapshot,
                                                     OutsideWeatherSnapshot outsideWeatherSnapshot, String rawText,
-                                                    ZonedDateTime createdAt, boolean delayed, ZonedDateTime experiencedAt,
+                                                    LocalDateTime createdAt, boolean delayed, LocalDateTime experiencedAt,
                                                     List<FeedbackExtractionResult.SensorScore> sensorScores) {
         Objects.requireNonNull(sensorScores, "sensorScores는 null일 수 없습니다.");
         FeedbackLog feedbackLog = createFeedbackLog(userId, roomId, snapshot, outsideWeatherSnapshot, rawText, createdAt, delayed, experiencedAt);

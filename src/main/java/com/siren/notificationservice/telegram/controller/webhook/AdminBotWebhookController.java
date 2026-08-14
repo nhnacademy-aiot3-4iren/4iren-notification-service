@@ -24,7 +24,6 @@ public class AdminBotWebhookController implements AdminBotWebhookControllerDoc {
     @Value("${rabbitmq.routing-key.telegram-inbound}")
     private String routingKey;
 
-
     @PostMapping("/webhook/admin")
     public ResponseEntity<Void> webhookAdmin(@RequestBody Update update) {
         //토큰 검증 및 chat_id db 저장은 비동기로처리

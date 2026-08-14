@@ -216,15 +216,15 @@ class AlertHistoryControllerTest {
 
     @Test
     void getAllAlertHistory_whenInvalidFilterValue_returns400() throws Exception {
-        when(alertHistoryService.getAlertHistoryByUserId(eq(USER_ID), any(AlertHistorySearchCondition.class), any(Pageable.class)))
-                .thenThrow(new IllegalArgumentException("No enum constant BotType.BAD"));
-
+        // 잘못된 enum 값은 컨트롤러 검증(트랜잭션 진입 전)에서 걸러 400 — 서비스까지 가지 않는다.
         mockMvc.perform(get("/api/notification/alert-histories")
                         .header("X-USER-ID", USER_ID)
                         .header("X-USER-ROLE", USER_ROLE)
                         .param("botType", "BAD"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
+
+        verifyNoInteractions(alertHistoryService);
     }
 
     // --- 역할 경계 (@RequireRole({OWNER, ADMIN})) ---

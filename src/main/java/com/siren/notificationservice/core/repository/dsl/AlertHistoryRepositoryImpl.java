@@ -14,11 +14,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
-import java.time.ZoneId;
 import java.util.List;
 
 public class AlertHistoryRepositoryImpl implements AlertHistoryRepositoryCustom {
-    private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
     private final JPAQueryFactory jpaQueryFactory;
 
@@ -36,8 +34,8 @@ public class AlertHistoryRepositoryImpl implements AlertHistoryRepositoryCustom 
         if (filter.roomId() != null) bb.and(q.roomId.eq(filter.roomId()));
         if (filter.botType() != null) bb.and(q.botType.eq(BotType.valueOf(filter.botType())));
         if (filter.alertType() != null) bb.and(q.alertType.eq(AlertType.valueOf(filter.alertType())));
-        if (filter.from() != null) bb.and(q.sendAt.goe(filter.from().atStartOfDay(ZONE)));
-        if (filter.to() != null) bb.and(q.sendAt.lt(filter.to().plusDays(1).atStartOfDay(ZONE)));
+        if (filter.from() != null) bb.and(q.sendAt.goe(filter.from().atStartOfDay()));
+        if (filter.to() != null) bb.and(q.sendAt.lt(filter.to().plusDays(1).atStartOfDay()));
 
         List<AlertHistory> content = jpaQueryFactory
                 .selectFrom(q)

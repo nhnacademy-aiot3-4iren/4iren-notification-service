@@ -43,7 +43,7 @@ public class TelegramClientConfig {
      */
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer telegramCallbackJacksonCustomizer() {
-        return builder -> builder.modules(new SimpleModule()
+        return builder -> builder.modulesToInstall(new SimpleModule()
                 .addAbstractTypeMapping(MaybeInaccessibleMessage.class, Message.class));
     }
 }

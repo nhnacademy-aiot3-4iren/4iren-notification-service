@@ -8,7 +8,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 @Service
 @Slf4j
@@ -43,7 +43,7 @@ public class AlertHistoryRetentionService {
      * 보관 기간이 지난 alert_history를 청크 단위로 삭제한다. 각 청크는 독립 트랜잭션이라 대량 삭제여도 롱 트랜잭션, 락 홀드, 복제 지연을 피한다.
      */
     public void purge() {
-        ZonedDateTime cutoff = ZonedDateTime.now(ZONE).minusDays(retentionDays);
+        LocalDateTime cutoff = LocalDateTime.now(ZONE).minusDays(retentionDays);
         int total = 0;
         int deleted;
         do {

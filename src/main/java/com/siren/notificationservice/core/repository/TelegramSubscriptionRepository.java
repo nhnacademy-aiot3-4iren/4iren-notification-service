@@ -43,6 +43,10 @@ public interface TelegramSubscriptionRepository extends JpaRepository<TelegramSu
      */
     boolean existsByUserIdAndBotType(Long userId, BotType botType);
 
+    List<TelegramSubscription> findByUserId(Long userId);
+
     @Query("SELECT s.botType FROM TelegramSubscription s WHERE s.userId=:userId AND s.active = true")
     List<BotType> findActiveBotTypesByUserId(Long userId);
+
+
 }

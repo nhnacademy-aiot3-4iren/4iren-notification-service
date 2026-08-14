@@ -1,0 +1,56 @@
+### 알림 이력 조회 API 검증 (/api/notification/alert-histories)
+### - @RequireRole({OWNER, ADMIN}) → X-USER-ROLE 필수(OWNER/ADMIN 아니면 403)
+### - 목록/단건은 X-USER-ID 소유자 스코프(IDOR 방어)
+### - 로컬은 host = http://localhost:8080 (Gateway 없이 헤더 직접 지정)
+### ※ Phase 7 발송이 안 돌면 alert_history가 비어 있어 목록은 빈 페이지, 단건은 404일 수 있음(정상
+
+### 1) 필터 옵션 조회 (드롭다운용: 연결된 봇 + 받은 알림종류) — 200
+GET {{host}}/api/notification/alert-histories/filter-options
+X-USER-ID: 1
+X-USER-ROLE: ADMIN
+
+### 2) 전체 목록 (필터 없이, 기본 페이지) — 200, 첫 진입 화면
+GET {{host}}/api/notification/alert-histories
+X-USER-ID: 1
+X-USER-ROLE: ADMIN
+
+### 3) 페이지네이션 (page/size/sort) — sendAt 내림차순
+GET {{host}}/api/notification/alert-histories?page=0&size=5&sort=sendAt,desc
+X-USER-ID: 1
+X-USER-ROLE: ADMIN
+
+### 4) 서버사이드 필터 조합 (roomId + 기간) — nullable, 넣은 것만 AND
+### botType: USER_BOT | ADMIN_BOT / alertType: 유효값은 1)filter-options 응답에서 확인 / from~to: yyyy-MM-dd (to 당일 포함)
+GET {{host}}/api/notification/alert-histories?roomId=7&from=2026-08-01&to=2026-08-14
+X-USER-ID: 1
+X-USER-ROLE: ADMIN
+
+### 5) 알림종류 필터 (alertType 값은 filter-options에서 받은 유효값으로 교체)
+GET {{host}}/api/notification/alert-histories?alertType=VENTILATION_RECOMMEND
+X-USER-ID: 1
+X-USER-ROLE: ADMIN
+
+### 6) 단건 조회 (본인 소유) — 200 (실데이터 있는 alert-history-id로 교체)
+GET {{host}}/api/notification/alert-histories/77
+X-USER-ID: 1
+X-USER-ROLE: ADMIN
+
+### 7) [IDOR 방어] 남의 알림 이력을 다른 유저가 조회 → 404 (소유자 스코프 findByAlertHistoryIdAndUserId)
+### 위 6)에서 유저1이 소유한 id를, 유저2가 조회 시도 → 조회 안 됨이어야 정상
+GET {{host}}/api/notification/alert-histories/77
+X-USER-ID: 2
+X-USER-ROLE: ADMIN
+
+### 8) [권한] NORMAL 역할 → 403 Forbidden (@RequireRole({OWNER, ADMIN}))
+GET {{host}}/api/notification/alert-histories
+X-USER-ID: 1
+X-USER-ROLE: NORMAL
+
+### 9) [권한] X-USER-ROLE 헤더 누락 → 403 Forbidden
+GET {{host}}/api/notification/alert-histories
+X-USER-ID: 1
+
+### 10) [잘못된 필터값] botType에 enum에 없는 값 → 400 Bad Request (IllegalArgumentException 매핑)
+GET {{host}}/api/notification/alert-histories?botType=NOT_A_BOT
+X-USER-ID: 1
+X-USER-ROLE: ADMIN

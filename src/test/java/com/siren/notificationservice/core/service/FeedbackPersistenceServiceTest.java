@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,14 +46,14 @@ class FeedbackPersistenceServiceTest {
 
     @Test
     void persistUsesExistingSnapshotsWithoutCallingCore() {
-        ZonedDateTime referenceAt = ZonedDateTime.now();
+        LocalDateTime referenceAt = LocalDateTime.now();
         RoomEnvironmentSnapshot roomSnapshot = RoomEnvironmentSnapshot.builder()
                 .snapshotId(10L).roomId(7L).windowStart(referenceAt).build();
         OutsideWeatherSnapshot weatherSnapshot = OutsideWeatherSnapshot.builder()
                 .weatherSnapshotId(20L).nx(60).ny(127).windowStart(referenceAt).build();
         when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(roomSnapshot);
         when(regionCacheService.find(7L)).thenReturn(Optional.of(new RoomWeatherRegion(60, 127)));
-        when(outsideWeatherSnapshotService.findSnapshotId(60, 127, referenceAt)).thenReturn(weatherSnapshot);
+        when(outsideWeatherSnapshotService.findSnapshotId(60, 127, referenceAt.minusMinutes(10).truncatedTo(ChronoUnit.HOURS))).thenReturn(weatherSnapshot);
 
         feedbackPersistenceService.persist(event(), referenceAt);
 
@@ -66,10 +66,10 @@ class FeedbackPersistenceServiceTest {
 
     @Test
     void persistCreatesRoomSnapshotFromCoreWhenNoneCachedLocally() {
-        ZonedDateTime referenceAt = ZonedDateTime.now();
+        LocalDateTime referenceAt = LocalDateTime.now();
         when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(null);
         RoomEnvironmentReadingResponse readingResponse = new RoomEnvironmentReadingResponse(7L, null, List.of());
-        when(coreApiClient.getRoomSensorsReadings(7L, referenceAt.toLocalDateTime())).thenReturn(readingResponse);
+        when(coreApiClient.getRoomSensorsReadings(7L, referenceAt)).thenReturn(readingResponse);
         RoomEnvironmentSnapshot createdSnapshot = RoomEnvironmentSnapshot.builder()
                 .snapshotId(11L).roomId(7L).windowStart(referenceAt).build();
         when(roomEnvironmentSnapshotService.createWithReadings(7L, referenceAt, readingResponse)).thenReturn(createdSnapshot);
@@ -85,9 +85,9 @@ class FeedbackPersistenceServiceTest {
 
     @Test
     void persistKeepsGoingWithNullSnapshotWhenCoreFailsForRoomReadings() {
-        ZonedDateTime referenceAt = ZonedDateTime.now();
+        LocalDateTime referenceAt = LocalDateTime.now();
         when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(null);
-        when(coreApiClient.getRoomSensorsReadings(7L, referenceAt.toLocalDateTime()))
+        when(coreApiClient.getRoomSensorsReadings(7L, referenceAt))
                 .thenThrow(new CoreApiUnavailableException(7L, "roomId"));
         when(regionCacheService.find(7L)).thenReturn(Optional.empty());
         when(coreApiClient.getOutsideWeather(any(), any())).thenThrow(new CoreApiUnavailableException(7L, "roomId"));
@@ -102,15 +102,15 @@ class FeedbackPersistenceServiceTest {
 
     @Test
     void persistCreatesWeatherSnapshotAndCachesRegionWhenNotCachedYet() {
-        ZonedDateTime referenceAt = ZonedDateTime.now();
+        LocalDateTime referenceAt = LocalDateTime.now();
         when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(
                 RoomEnvironmentSnapshot.builder().snapshotId(10L).roomId(7L).windowStart(referenceAt).build());
         when(regionCacheService.find(7L)).thenReturn(Optional.empty());
         OutsideWeather weather = new OutsideWeather("2026-07-24 13:00", "33.7℃", "69%", 60, 127);
-        when(coreApiClient.getOutsideWeather(7L, referenceAt.toLocalDateTime())).thenReturn(weather);
-        ZonedDateTime windowStart = LocalDateTime
+        when(coreApiClient.getOutsideWeather(7L, referenceAt)).thenReturn(weather);
+        LocalDateTime windowStart = LocalDateTime
                 .parse("2026-07-24 13:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                .atZone(ZoneId.of("Asia/Seoul"));
+                ;
         when(outsideWeatherSnapshotService.findSnapshotId(60, 127, windowStart)).thenReturn(null);
         OutsideWeatherSnapshot createdWeatherSnapshot = OutsideWeatherSnapshot.builder()
                 .weatherSnapshotId(21L).nx(60).ny(127).windowStart(windowStart).build();
@@ -128,12 +128,12 @@ class FeedbackPersistenceServiceTest {
 
     @Test
     void persistSkipsWeatherSnapshotWhenBaseDateTimeIsUnparseable() {
-        ZonedDateTime referenceAt = ZonedDateTime.now();
+        LocalDateTime referenceAt = LocalDateTime.now();
         when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(
                 RoomEnvironmentSnapshot.builder().snapshotId(10L).roomId(7L).windowStart(referenceAt).build());
         when(regionCacheService.find(7L)).thenReturn(Optional.empty());
         OutsideWeather weather = new OutsideWeather("이상한형식", "33.7℃", "69%", 60, 127);
-        when(coreApiClient.getOutsideWeather(7L, referenceAt.toLocalDateTime())).thenReturn(weather);
+        when(coreApiClient.getOutsideWeather(7L, referenceAt)).thenReturn(weather);
 
         feedbackPersistenceService.persist(event(), referenceAt);
 

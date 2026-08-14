@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -62,7 +62,7 @@ public class AlertMessageFormatter {
     }
 
     private String formatDetectedAt(Instant detectedAt) {
-        return ZonedDateTime.ofInstant(detectedAt, SERVICE_ZONE).format(DETECTED_AT_FORMAT);
+        return "🕐 탐지 " + LocalDateTime.ofInstant(detectedAt, SERVICE_ZONE).format(DETECTED_AT_FORMAT);
     }
 
     private String formatRoomName(String roomName) {

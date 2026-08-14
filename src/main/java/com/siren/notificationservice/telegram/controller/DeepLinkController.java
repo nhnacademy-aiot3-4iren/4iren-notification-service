@@ -1,9 +1,11 @@
 package com.siren.notificationservice.telegram.controller;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.entity.domain.UserRole;
 import com.siren.notificationservice.core.security.RequireRole;
 import com.siren.notificationservice.core.security.Role;
 import com.siren.notificationservice.telegram.controller.webhook.doc.DeepLinkControllerDoc;
+import com.siren.notificationservice.telegram.dto.LinkTokenData;
 import com.siren.notificationservice.telegram.dto.response.LinkStatusResponse;
 import com.siren.notificationservice.telegram.dto.response.LinkTokenResponse;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
@@ -27,8 +29,9 @@ public class DeepLinkController implements DeepLinkControllerDoc {
     @RequireRole({Role.OWNER, Role.ADMIN})
     @PostMapping("/telegram/admin/link-token")
     public ResponseEntity<LinkTokenResponse> linkAdminToken(
-            @RequestHeader("X-USER-ID") Long userId) {
-        String deepLinkUrl = telegramLinkTokenService.getDeepLinkUrl(userId,  BotType.ADMIN_BOT);
+            @RequestHeader("X-USER-ID") Long userId,
+            @RequestHeader("X-USER-ROLE")UserRole role) {
+        String deepLinkUrl = telegramLinkTokenService.getDeepLinkUrl(new LinkTokenData(userId,role), BotType.ADMIN_BOT);
         return ResponseEntity.ok().body(new LinkTokenResponse(deepLinkUrl, TelegramLinkTokenService.LINK_TOKEN_TTL.toSeconds()));
     }
 
@@ -38,8 +41,9 @@ public class DeepLinkController implements DeepLinkControllerDoc {
     @RequireRole({Role.OWNER, Role.ADMIN, Role.NORMAL})
     @PostMapping("/telegram/member/link-token")
     public ResponseEntity<LinkTokenResponse> linkMemberToken(
-            @RequestHeader("X-USER-ID") Long userId) {
-        String deepLinkUrl = telegramLinkTokenService.getDeepLinkUrl(userId,  BotType.USER_BOT);
+            @RequestHeader("X-USER-ID") Long userId,
+            @RequestHeader("X-USER-ROLE")UserRole role) {
+        String deepLinkUrl = telegramLinkTokenService.getDeepLinkUrl(new LinkTokenData(userId,role),  BotType.USER_BOT);
         return ResponseEntity.ok().body(new LinkTokenResponse(deepLinkUrl, TelegramLinkTokenService.LINK_TOKEN_TTL.toSeconds()));
     }
 

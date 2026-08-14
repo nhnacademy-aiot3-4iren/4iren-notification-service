@@ -7,7 +7,7 @@ import com.siren.notificationservice.core.service.basic_service.OutsideWeatherSn
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,7 +23,7 @@ class OutsideWeatherSnapshotServiceTest {
     private final OutsideWeatherSnapshotService outsideWeatherSnapshotService =
             new OutsideWeatherSnapshotService(outsideWeatherSnapshotRepository);
 
-    private OutsideWeatherSnapshot snapshot(Long id, Integer nx, Integer ny, ZonedDateTime windowStart) {
+    private OutsideWeatherSnapshot snapshot(Long id, Integer nx, Integer ny, LocalDateTime windowStart) {
         return OutsideWeatherSnapshot.builder()
                 .weatherSnapshotId(id)
                 .nx(nx)
@@ -36,7 +36,7 @@ class OutsideWeatherSnapshotServiceTest {
 
     @Test
     void getOutsideWeatherSnapshotReturnsSnapshot() {
-        OutsideWeatherSnapshot snapshot = snapshot(1L, 60, 127, ZonedDateTime.now());
+        OutsideWeatherSnapshot snapshot = snapshot(1L, 60, 127, LocalDateTime.now());
         when(outsideWeatherSnapshotRepository.findById(1L)).thenReturn(Optional.of(snapshot));
 
         OutsideWeatherSnapshot result = outsideWeatherSnapshotService.getOutsideWeatherSnapshot(1L);
@@ -61,7 +61,7 @@ class OutsideWeatherSnapshotServiceTest {
 
     @Test
     void getByIdsReturnsSnapshots() {
-        OutsideWeatherSnapshot snapshot = snapshot(1L, 60, 127, ZonedDateTime.now());
+        OutsideWeatherSnapshot snapshot = snapshot(1L, 60, 127, LocalDateTime.now());
         when(outsideWeatherSnapshotRepository.findAllById(List.of(1L))).thenReturn(List.of(snapshot));
 
         List<OutsideWeatherSnapshot> result = outsideWeatherSnapshotService.getByIds(List.of(1L));
@@ -77,7 +77,7 @@ class OutsideWeatherSnapshotServiceTest {
 
     @Test
     void findSnapshotIdReturnsSnapshotWhenExists() {
-        ZonedDateTime windowStart = ZonedDateTime.now();
+        LocalDateTime windowStart = LocalDateTime.now();
         OutsideWeatherSnapshot snapshot = snapshot(1L, 60, 127, windowStart);
         when(outsideWeatherSnapshotRepository.findByNxAndNyAndWindowStart(60, 127, windowStart))
                 .thenReturn(Optional.of(snapshot));
@@ -89,7 +89,7 @@ class OutsideWeatherSnapshotServiceTest {
 
     @Test
     void findSnapshotIdReturnsNullWhenNotExists() {
-        ZonedDateTime windowStart = ZonedDateTime.now();
+        LocalDateTime windowStart = LocalDateTime.now();
         when(outsideWeatherSnapshotRepository.findByNxAndNyAndWindowStart(60, 127, windowStart))
                 .thenReturn(Optional.empty());
 
@@ -100,7 +100,7 @@ class OutsideWeatherSnapshotServiceTest {
 
     @Test
     void createOutsideWeatherSnapshotSavesNewSnapshot() {
-        ZonedDateTime windowStart = ZonedDateTime.now();
+        LocalDateTime windowStart = LocalDateTime.now();
         when(outsideWeatherSnapshotRepository.findByNxAndNyAndWindowStart(60, 127, windowStart))
                 .thenReturn(Optional.empty());
         OutsideWeatherSnapshot saved = snapshot(1L, 60, 127, windowStart);
@@ -114,7 +114,7 @@ class OutsideWeatherSnapshotServiceTest {
 
     @Test
     void createOutsideWeatherSnapshotThrowsWhenAlreadyExists() {
-        ZonedDateTime windowStart = ZonedDateTime.now();
+        LocalDateTime windowStart = LocalDateTime.now();
         OutsideWeatherSnapshot existing = snapshot(1L, 60, 127, windowStart);
         when(outsideWeatherSnapshotRepository.findByNxAndNyAndWindowStart(60, 127, windowStart))
                 .thenReturn(Optional.of(existing));
@@ -128,7 +128,7 @@ class OutsideWeatherSnapshotServiceTest {
 
     @Test
     void getReferenceByIdReturnsProxy() {
-        OutsideWeatherSnapshot proxy = snapshot(1L, 60, 127, ZonedDateTime.now());
+        OutsideWeatherSnapshot proxy = snapshot(1L, 60, 127, LocalDateTime.now());
         when(outsideWeatherSnapshotRepository.getReferenceById(1L)).thenReturn(proxy);
 
         OutsideWeatherSnapshot result = outsideWeatherSnapshotService.getReferenceById(1L);

@@ -9,7 +9,7 @@ import com.siren.notificationservice.telegram.dto.feedback.FeedbackExtractionRes
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageRequest;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,7 +31,7 @@ class FeedbackLogServiceTest {
                 .feedbackLogId(id)
                 .roomId(7L)
                 .rawText("더워요")
-                .createdAt(ZonedDateTime.now())
+                .createdAt(LocalDateTime.now())
                 .userId(1L)
                 .delayed(false)
                 .build();
@@ -69,7 +69,7 @@ class FeedbackLogServiceTest {
                 List.of(new FeedbackExtractionResult.SensorScore(SensorType.TEMPERATURE, 1));
 
         feedbackLogService.createFeedbackLogWithScores(1L, 7L, null, null, "더워요",
-                ZonedDateTime.now(), false, null, sensorScores);
+                LocalDateTime.now(), false, null, sensorScores);
 
         verify(feedbackLogRepository).save(any());
         verify(feedbackScoreService).saveAll(any());
@@ -77,7 +77,7 @@ class FeedbackLogServiceTest {
 
     @Test
     void createFeedbackLogWithScoresThrowsWhenSensorScoresIsNull() {
-        ZonedDateTime createdAt = ZonedDateTime.now();
+        LocalDateTime createdAt = LocalDateTime.now();
 
         assertThatThrownBy(() -> feedbackLogService.createFeedbackLogWithScores(1L, 7L, null, null, "더워요",
                 createdAt, false, null, null))
@@ -86,7 +86,7 @@ class FeedbackLogServiceTest {
 
     @Test
     void createFeedbackLogWithScoresThrowsWhenUserIdIsNull() {
-        ZonedDateTime createdAt = ZonedDateTime.now();
+        LocalDateTime createdAt = LocalDateTime.now();
 
         assertThatThrownBy(() -> feedbackLogService.createFeedbackLogWithScores(null, 7L, null, null, "더워요",
                 createdAt, false, null, List.of()))
