@@ -18,6 +18,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,7 +50,7 @@ class AlertHistoryControllerTest {
                 "MEMBER",
                 "SENSOR_ANOMALY",
                 "온도 이상 감지",
-                LocalDateTime.of(2026, 8, 11, 9, 30)
+                        LocalDateTime.of(2026, Month.OCTOBER , 11, 9, 30)
         );
     }
 
@@ -73,6 +74,7 @@ class AlertHistoryControllerTest {
                 .andExpect(jsonPath("$.content[0].botType").value("MEMBER"))
                 .andExpect(jsonPath("$.content[0].alertType").value("SENSOR_ANOMALY"))
                 .andExpect(jsonPath("$.content[0].message").value("온도 이상 감지"))
+                .andExpect(jsonPath("$.content[0].sendAt").value("2026-10-11T09:30:00"))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.totalElements").value(1))
@@ -177,7 +179,8 @@ class AlertHistoryControllerTest {
                 .andExpect(jsonPath("$.roomId").value(101))
                 .andExpect(jsonPath("$.botType").value("MEMBER"))
                 .andExpect(jsonPath("$.alertType").value("SENSOR_ANOMALY"))
-                .andExpect(jsonPath("$.message").value("온도 이상 감지"));
+                .andExpect(jsonPath("$.message").value("온도 이상 감지"))
+                .andExpect(jsonPath("$.sendAt").value("2026-10-11T09:30:00"));
     }
 
     @Test

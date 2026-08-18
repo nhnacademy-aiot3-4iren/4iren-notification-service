@@ -16,6 +16,10 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class RoomEnvironmentReadingService {
+    private static final String SNAPSHOT_ID_NULL_MESSAGE = "snapshotId는 null일 수 없습니다.";
+    private static final String SNAPSHOT_IDS_NULL_MESSAGE = "snapshotIds는 null일 수 없습니다.";
+    private static final String READINGS_NULL_MESSAGE = "readings는 null일 수 없습니다.";
+
     private final RoomEnvironmentReadingRepository roomEnvironmentReadingRepository;
 
     /**
@@ -23,7 +27,7 @@ public class RoomEnvironmentReadingService {
      */
     @Transactional(readOnly = true)
     public List<RoomEnvironmentReading> getReadingsBySnapshotId(Long snapshotId) {
-        Objects.requireNonNull(snapshotId, "snapshotId는 null일 수 없습니다.");
+        Objects.requireNonNull(snapshotId, SNAPSHOT_ID_NULL_MESSAGE);
         return roomEnvironmentReadingRepository.findById_SnapshotId(snapshotId);
     }
 
@@ -32,7 +36,7 @@ public class RoomEnvironmentReadingService {
      */
     @Transactional(readOnly = true)
     public List<RoomEnvironmentReading> getReadingsBySnapshotIds(List<Long> snapshotIds) {
-        Objects.requireNonNull(snapshotIds, "snapshotIds는 null일 수 없습니다.");
+        Objects.requireNonNull(snapshotIds, SNAPSHOT_IDS_NULL_MESSAGE);
         return roomEnvironmentReadingRepository.findById_SnapshotIdIn(snapshotIds);
     }
 
@@ -42,7 +46,7 @@ public class RoomEnvironmentReadingService {
      */
     @Transactional
     public void saveAll(List<RoomEnvironmentReading> readings) {
-        Objects.requireNonNull(readings, "readings는 null일 수 없습니다.");
+        Objects.requireNonNull(readings, READINGS_NULL_MESSAGE);
         roomEnvironmentReadingRepository.saveAll(readings);
     }
 }

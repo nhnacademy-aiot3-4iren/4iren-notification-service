@@ -46,8 +46,8 @@ public class AlertDigestBufferService {
             Boolean first = redisTemplate.opsForValue()
                     .setIfAbsent(String.format(SCHEDULED_KEY, userId), "1", Duration.ofMillis(ttlMs *2));
 
-            /// 폴링을 없애고 싶어서 컨슈머 없는 큐(대기큐)에 큐 TTL 3분 걸어놓으면 자동으로 dlx 타고 flush 큐로 이동
-            /// 여기는 우선 해당 유저 아이디가 redis에 저장되어잇음을 발행(3분)
+            // 폴링을 없애고 싶어서 컨슈머 없는 큐(대기큐)에 큐 TTL 3분 걸어놓으면 자동으로 dlx 타고 flush 큐로 이동
+            // 여기는 우선 해당 유저 아이디가 redis에 저장되어잇음을 발행(3분)
             if(Boolean.TRUE.equals(first)) {
                 // true 면 유저의 첫 발행이므로 delay 큐에 발행
                 rabbitTemplate.convertAndSend(delayExchange, delayRoutingKey, new AlertDigestFlushMessage(userId));

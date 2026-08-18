@@ -16,6 +16,10 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class FeedbackScoreService {
+    private static final String FEEDBACK_LOG_ID_NULL_MESSAGE = "feedbackLogId는 null일 수 없습니다.";
+    private static final String FEEDBACK_LOG_IDS_NULL_MESSAGE = "feedbackLogIds는 null일 수 없습니다.";
+    private static final String SCORES_NULL_MESSAGE = "scores는 null일 수 없습니다.";
+
     private final FeedbackScoreRepository feedbackScoreRepository;
 
     /**
@@ -23,7 +27,7 @@ public class FeedbackScoreService {
      */
     @Transactional(readOnly = true)
     public List<FeedbackScore> getScoresByFeedbackLogId(Long feedbackLogId) {
-        Objects.requireNonNull(feedbackLogId, "feedbackLogId는 null일 수 없습니다.");
+        Objects.requireNonNull(feedbackLogId, FEEDBACK_LOG_ID_NULL_MESSAGE);
         return feedbackScoreRepository.findById_FeedbackLogId(feedbackLogId);
     }
 
@@ -32,7 +36,7 @@ public class FeedbackScoreService {
      */
     @Transactional(readOnly = true)
     public List<FeedbackScore> getScoresByFeedbackLogIdIn(List<Long> feedbackLogIds) {
-        Objects.requireNonNull(feedbackLogIds, "feedbackLogIds는 null일 수 없습니다.");
+        Objects.requireNonNull(feedbackLogIds, FEEDBACK_LOG_IDS_NULL_MESSAGE);
         return feedbackScoreRepository.findById_FeedbackLogIdIn(feedbackLogIds);
     }
 
@@ -42,7 +46,7 @@ public class FeedbackScoreService {
      */
     @Transactional
     public void saveAll(List<FeedbackScore> scores) {
-        Objects.requireNonNull(scores, "scores는 null일 수 없습니다.");
+        Objects.requireNonNull(scores, SCORES_NULL_MESSAGE);
         feedbackScoreRepository.saveAll(scores);
     }
 

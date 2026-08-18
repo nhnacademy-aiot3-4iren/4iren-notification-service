@@ -9,11 +9,13 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Optional;
 
 public final class TelegramInboundEvent {
     private static final String CALLBACK_DELIMITER = ":";
+    private static final ZoneId zoneId = ZoneId.of("Asia/Seoul");
 
     private final BotType botType;
     private final Update update;
@@ -36,7 +38,7 @@ public final class TelegramInboundEvent {
             this.question = idx >= 0 ? data.substring(idx + 1) : data;
             String prefix = idx >= 0 ? data.substring(0, idx) : data; // 0-7까지 FB_ROOM
             this.callbackActionType = CallbackActionType.fromPrefix(prefix).orElse(null);
-            this.requestAt = LocalDateTime.now();
+            this.requestAt = LocalDateTime.now(zoneId);
         }else if(update.hasMyChatMember()){
             this.chatId = update.getMyChatMember().getChat().getId().toString();
             this.question = null;
@@ -51,7 +53,7 @@ public final class TelegramInboundEvent {
             this.chatId = null;
             this.question = null;
             this.callbackActionType = null;
-            this.requestAt = LocalDateTime.now();
+            this.requestAt = LocalDateTime.now(zoneId);
         }
     }
 

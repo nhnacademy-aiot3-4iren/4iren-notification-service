@@ -3,6 +3,7 @@ package com.siren.notificationservice.telegram.messaging.inbound;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.exception.MissingChatIdException;
 import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
+import com.siren.notificationservice.core.service.basic_service.TelegramSubscriptionService;
 import com.siren.notificationservice.telegram.agent.IntentClassificationAgent;
 import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.callback.handler.CallbackRouteDispatcher;
@@ -31,6 +32,7 @@ import java.util.Optional;
 public class TelegramInboundListener {
 
     private final TelegramLinkTokenService telegramLinkTokenService;
+    private final TelegramSubscriptionService telegramSubscriptionService;
     private final TelegramInboundSubService telegramInboundSubService;
     private final IntentClassificationAgent intentClassificationAgent;
     private final TelegramMessageService telegramMessageService;
@@ -136,7 +138,7 @@ public class TelegramInboundListener {
      */
     private Optional<Long> resolveLinkedUserId(String chatId, BotType botType) {
         try {
-            return Optional.of(telegramLinkTokenService.getUserIdByChatId(chatId, botType));
+            return Optional.of(telegramSubscriptionService.getUserIdByChatId(chatId, botType));
         } catch (TelegramSubscriptionNotFoundException e) {
             telegramMessageService.sendNotLinkedGuideMessage(chatId, botType);
             return Optional.empty();

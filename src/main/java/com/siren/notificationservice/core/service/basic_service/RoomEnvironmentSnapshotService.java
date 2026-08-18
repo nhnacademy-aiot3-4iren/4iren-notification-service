@@ -26,6 +26,10 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class RoomEnvironmentSnapshotService {
+    private static final String ROOM_ID_NULL_MESSAGE = "roomId는 null일 수 없습니다.";
+    private static final String SNAPSHOT_ID_NULL_MESSAGE = "snapshotId는 null일 수 없습니다.";
+    private static final String REFERENCE_AT_NULL_MESSAGE = "referenceAt은 null일 수 없습니다.";
+    private static final String READINGS_NULL_MESSAGE = "readings는 null일 수 없습니다.";
     private final RoomEnvironmentSnapshotRepository roomEnvironmentSnapshotRepository;
     private final RoomEnvironmentReadingService roomEnvironmentReadingService;
 
@@ -33,7 +37,7 @@ public class RoomEnvironmentSnapshotService {
      * snapshotId로 스냅샷 단건을 조회한다.
      */
     public RoomEnvironmentSnapshot getRoomEnvironmentSnapshot(Long snapshotId) {
-        Objects.requireNonNull(snapshotId, "snapshotId는 null일 수 없습니다.");
+        Objects.requireNonNull(snapshotId, SNAPSHOT_ID_NULL_MESSAGE);
         return roomEnvironmentSnapshotRepository.findById(snapshotId).orElse(null);
     }
 
@@ -41,7 +45,7 @@ public class RoomEnvironmentSnapshotService {
      * 특정 강의실의 스냅샷 전체를 조회한다.
      */
     public List<RoomEnvironmentSnapshot> getRoomEnvironmentSnapshotByRoomId(Long roomId) {
-        Objects.requireNonNull(roomId, "roomId는 null일 수 없습니다.");
+        Objects.requireNonNull(roomId, ROOM_ID_NULL_MESSAGE);
         return roomEnvironmentSnapshotRepository.findByRoomId(roomId);
     }
 
@@ -49,8 +53,8 @@ public class RoomEnvironmentSnapshotService {
      * referenceAt을 커버하는 스냅샷이 있으면 그 id를, 없으면 null을 반환한다.
      */
     public RoomEnvironmentSnapshot findSnapshotId(Long roomId, LocalDateTime referenceAt) {
-        Objects.requireNonNull(roomId, "roomId는 null일 수 없습니다.");
-        Objects.requireNonNull(referenceAt, "referenceAt은 null일 수 없습니다.");
+        Objects.requireNonNull(roomId, ROOM_ID_NULL_MESSAGE);
+        Objects.requireNonNull(referenceAt, REFERENCE_AT_NULL_MESSAGE);
         return roomEnvironmentSnapshotRepository
                 .findFirstByRoomIdAndWindowStartBetweenOrderByWindowStartAsc(roomId, referenceAt, referenceAt.plusMinutes(15))
                 .orElse(null);
@@ -60,7 +64,7 @@ public class RoomEnvironmentSnapshotService {
      * snapshotId로 프록시 참조만 만든다 (DB 조회 없음).
      */
     public RoomEnvironmentSnapshot getReferenceById(Long snapshotId) {
-        Objects.requireNonNull(snapshotId, "snapshotId는 null일 수 없습니다.");
+        Objects.requireNonNull(snapshotId, SNAPSHOT_ID_NULL_MESSAGE);
         return roomEnvironmentSnapshotRepository.getReferenceById(snapshotId);
     }
 
@@ -69,7 +73,7 @@ public class RoomEnvironmentSnapshotService {
      */
     @Transactional
     public RoomEnvironmentSnapshot createWithReadings(Long roomId, LocalDateTime referenceAt, RoomEnvironmentReadingResponse readings) {
-        Objects.requireNonNull(readings, "readings는 null일 수 없습니다.");
+        Objects.requireNonNull(readings, READINGS_NULL_MESSAGE);
         RoomEnvironmentSnapshot snapshot = createRoomEnvironmentSnapshot(roomId, referenceAt);
 
         List<RoomEnvironmentReading> validReadings = readings.metrics().stream()
@@ -84,9 +88,9 @@ public class RoomEnvironmentSnapshotService {
      * 강의실의 새 스냅샷을 만든다. 같은 referenceAt이 이미 있으면 예외를 던진다.
      */
     private RoomEnvironmentSnapshot createRoomEnvironmentSnapshot(Long roomId, LocalDateTime referenceAt) {
-        Objects.requireNonNull(roomId, "roomId는 null일 수 없습니다.");
-        Objects.requireNonNull(referenceAt, "referenceAt은 null일 수 없습니다.");
-        if (findSnapshotId(roomId, referenceAt) != null) {
+        Objects.requireNonNull(roomId, ROOM_ID_NULL_MESSAGE);
+        Objects.requireNonNull(referenceAt, REFERENCE_AT_NULL_MESSAGE);
+        if ((roomEnvironmentSnapshotRepository.findFirstByRoomIdAndWindowStartBetweenOrderByWindowStartAsc(roomId, referenceAt, referenceAt.plusMinutes(15)).isPresent())){
             throw new RoomEnvironmentSnapshotAlreadyExistsException(roomId, referenceAt);
         }
         return roomEnvironmentSnapshotRepository.save(

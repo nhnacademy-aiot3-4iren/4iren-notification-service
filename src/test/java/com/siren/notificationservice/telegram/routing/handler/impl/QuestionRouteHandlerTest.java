@@ -2,6 +2,7 @@ package com.siren.notificationservice.telegram.routing.handler.impl;
 
 import com.siren.notificationservice.core.client.CoreApiClient;
 import com.siren.notificationservice.core.client.RecommendationApiClient;
+import com.siren.notificationservice.core.dto.ConversationContext;
 import com.siren.notificationservice.core.dto.request.RecommendationRequest;
 import com.siren.notificationservice.core.dto.response.RecommendationResponse;
 import com.siren.notificationservice.core.dto.response.RoomSubResponse;
@@ -11,6 +12,7 @@ import com.siren.notificationservice.core.entity.domain.UserRole;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
 import com.siren.notificationservice.core.service.basic_service.TelegramSubscriptionService;
 import com.siren.notificationservice.core.service.cache.LastMentionedRoomService;
+import com.siren.notificationservice.core.service.cache.LlmConversationContextService;
 import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.routing.IntentType;
@@ -37,8 +39,10 @@ class QuestionRouteHandlerTest {
     private final CoreApiClient coreApiClient = mock(CoreApiClient.class);
     private final LastMentionedRoomService lastMentionedRoomService = mock(LastMentionedRoomService.class);
     private final TelegramMessageService telegramMessageService = mock(TelegramMessageService.class);
+    private final LlmConversationContextService llmConversationContextService = mock(LlmConversationContextService.class);
     private final QuestionRouteHandler questionRouteHandler = new QuestionRouteHandler(
-            recommendationApiClient, telegramSubscriptionService, coreApiClient, lastMentionedRoomService, telegramMessageService);
+            recommendationApiClient, telegramSubscriptionService, coreApiClient, lastMentionedRoomService, telegramMessageService,
+            llmConversationContextService);
 
     private TelegramInboundEvent textEvent(String text) {
         Chat chat = new Chat();
@@ -91,6 +95,7 @@ class QuestionRouteHandlerTest {
         verify(lastMentionedRoomService).save(1L, 7L);
         verify(telegramMessageService).sendInlineKeyboardMessage(event.chatId(), BotType.USER_BOT, "지금 환기하세요",
                 CallbackActionType.QUESTION_CONTINUE, List.of("좋아요", "나중에"));
+        verify(llmConversationContextService, never()).save(any(), any());
     }
 
     @Test
@@ -103,6 +108,18 @@ class QuestionRouteHandlerTest {
         questionRouteHandler.handle(event, 1L);
 
         verify(telegramMessageService).sendMessage(event.chatId(), BotType.USER_BOT, "지금 24도예요", "[Recommendation API] - LLM 답변");
+    }
+
+    @Test
+    void handleSavesConversationContextWhenRecommendationHasNoOptions() {
+        TelegramInboundEvent event = textEvent("몇 도야?");
+        when(coreApiClient.getRoomSubscriptions(1L)).thenReturn(subscribedRooms());
+        when(recommendationApiClient.getRecommendation(any(), any(), any(), any()))
+                .thenReturn(response(7L, "지금 24도예요", List.of()));
+
+        questionRouteHandler.handle(event, 1L);
+
+        verify(llmConversationContextService).save(1L, new ConversationContext("QUESTION", "몇 도야?", "지금 24도예요"));
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.siren.notificationservice.telegram.routing.handler.impl;
 
 import com.siren.notificationservice.core.client.CoreApiClient;
+import com.siren.notificationservice.core.dto.ConversationContext;
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
 import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import com.siren.notificationservice.core.dto.response.RoomSubResponse;
@@ -9,6 +10,7 @@ import com.siren.notificationservice.core.entity.domain.SensorType;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
 import com.siren.notificationservice.core.service.FeedbackRoomResolver;
 import com.siren.notificationservice.core.service.cache.FeedbackExtractionCacheService;
+import com.siren.notificationservice.core.service.cache.LlmConversationContextService;
 import com.siren.notificationservice.telegram.agent.FeedbackExtractionAgent;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.dto.feedback.FeedbackExtractionResult;
@@ -38,9 +40,11 @@ class FeedbackRouteHandlerTest {
     private final FeedbackExtractionAgent feedbackExtractionAgent = mock(FeedbackExtractionAgent.class);
     private final FeedbackRoomResolver feedbackRoomResolver = mock(FeedbackRoomResolver.class);
     private final FeedbackProcessingEventPublisher feedbackProcessingEventPublisher = mock(FeedbackProcessingEventPublisher.class);
+    private final LlmConversationContextService llmConversationContextService = mock(LlmConversationContextService.class);
     private final FeedbackRouteHandler feedbackRouteHandler = new FeedbackRouteHandler(
             telegramMessageService, feedbackExtractionCacheService, coreApiClient,
-            feedbackExtractionAgent, feedbackRoomResolver, feedbackProcessingEventPublisher);
+            feedbackExtractionAgent, feedbackRoomResolver, feedbackProcessingEventPublisher,
+            llmConversationContextService);
 
     private TelegramInboundEvent textEvent(String text) {
         Chat chat = new Chat();
@@ -96,11 +100,15 @@ class FeedbackRouteHandlerTest {
         when(feedbackExtractionAgent.extract(any(), any())).thenReturn(extractionResult("301호"));
         when(feedbackRoomResolver.resolve("301호", 1L, subscribedRooms(2).roomSubInfo())).thenReturn(Optional.of(7L));
         when(feedbackProcessingEventPublisher.publish(any())).thenReturn(true);
+        when(telegramMessageService.sendFeedbackAcknowledgeMessage(event.chatId(), BotType.USER_BOT, "301호"))
+                .thenReturn("'301호' 강의실 의견으로 접수했어요. 반영하여 더 나은 환경을 만들겠습니다.");
 
         feedbackRouteHandler.handle(event, 1L);
 
         verify(feedbackProcessingEventPublisher).publish(any());
         verify(telegramMessageService).sendFeedbackAcknowledgeMessage(event.chatId(), BotType.USER_BOT, "301호");
+        verify(llmConversationContextService).save(1L, new ConversationContext("FEEDBACK", "301호 너무 더워요",
+                "'301호' 강의실 의견으로 접수했어요. 반영하여 더 나은 환경을 만들겠습니다."));
     }
 
     @Test
@@ -115,6 +123,7 @@ class FeedbackRouteHandlerTest {
 
         verify(telegramMessageService).sendFeedbackProcessingFailedMessage(event.chatId(), BotType.USER_BOT);
         verify(telegramMessageService, never()).sendFeedbackAcknowledgeMessage(any(), any(), any());
+        verify(llmConversationContextService, never()).save(any(), any());
     }
 
     @Test
@@ -151,11 +160,15 @@ class FeedbackRouteHandlerTest {
                 List.of(new FeedbackExtractionCache.RoomCandidate(7L, "301호")), extractionResult(null));
         when(feedbackRoomResolver.matchReply("301호", 1L, cache.candidates())).thenReturn(Optional.of(7L));
         when(feedbackProcessingEventPublisher.publish(any())).thenReturn(true);
+        when(telegramMessageService.sendFeedbackAcknowledgeMessage(event.chatId(), BotType.USER_BOT, "301호"))
+                .thenReturn("'301호' 강의실 의견으로 접수했어요. 반영하여 더 나은 환경을 만들겠습니다.");
 
         feedbackRouteHandler.handleUserReply(event, 1L, cache);
 
         verify(feedbackExtractionCacheService).clear(1L);
         verify(telegramMessageService).sendFeedbackAcknowledgeMessage(event.chatId(), BotType.USER_BOT, "301호");
+        verify(llmConversationContextService).save(1L, new ConversationContext("FEEDBACK", "너무 더워요",
+                "'301호' 강의실 의견으로 접수했어요. 반영하여 더 나은 환경을 만들겠습니다."));
     }
 
     @Test

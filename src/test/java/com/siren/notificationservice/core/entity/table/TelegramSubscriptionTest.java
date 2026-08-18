@@ -1,6 +1,7 @@
 package com.siren.notificationservice.core.entity.table;
 
 import com.siren.notificationservice.core.entity.domain.BotType;
+import com.siren.notificationservice.core.entity.domain.UserRole;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -67,5 +68,48 @@ class TelegramSubscriptionTest {
         subscription.link("222", LocalDateTime.now());
 
         assertThat(subscription.isActive()).isTrue();
+    }
+
+    @Test
+    void updateUserRoleAppliesNewerEvent() {
+        LocalDateTime firstUpdate = LocalDateTime.now().minusMinutes(1);
+        TelegramSubscription subscription = TelegramSubscription.builder()
+                .botType(BotType.USER_BOT).chatId("111").active(true)
+                .createdAt(LocalDateTime.now()).userId(1L)
+                .userRole(UserRole.NORMAL).roleUpdatedAt(firstUpdate).build();
+        LocalDateTime newerUpdate = firstUpdate.plusMinutes(1);
+
+        subscription.updateUserRole(UserRole.ADMIN, newerUpdate);
+
+        assertThat(subscription.getUserRole()).isEqualTo(UserRole.ADMIN);
+        assertThat(subscription.getRoleUpdatedAt()).isEqualTo(newerUpdate);
+    }
+
+    @Test
+    void updateUserRoleIgnoresStaleEvent() {
+        LocalDateTime latestUpdate = LocalDateTime.now();
+        TelegramSubscription subscription = TelegramSubscription.builder()
+                .botType(BotType.USER_BOT).chatId("111").active(true)
+                .createdAt(LocalDateTime.now()).userId(1L)
+                .userRole(UserRole.ADMIN).roleUpdatedAt(latestUpdate).build();
+        LocalDateTime staleUpdate = latestUpdate.minusMinutes(1);
+
+        subscription.updateUserRole(UserRole.NORMAL, staleUpdate);
+
+        assertThat(subscription.getUserRole()).isEqualTo(UserRole.ADMIN);
+        assertThat(subscription.getRoleUpdatedAt()).isEqualTo(latestUpdate);
+    }
+
+    @Test
+    void updateUserRoleIgnoresEventWithSameTimestamp() {
+        LocalDateTime sameUpdate = LocalDateTime.now();
+        TelegramSubscription subscription = TelegramSubscription.builder()
+                .botType(BotType.USER_BOT).chatId("111").active(true)
+                .createdAt(LocalDateTime.now()).userId(1L)
+                .userRole(UserRole.ADMIN).roleUpdatedAt(sameUpdate).build();
+
+        subscription.updateUserRole(UserRole.NORMAL, sameUpdate);
+
+        assertThat(subscription.getUserRole()).isEqualTo(UserRole.ADMIN);
     }
 }

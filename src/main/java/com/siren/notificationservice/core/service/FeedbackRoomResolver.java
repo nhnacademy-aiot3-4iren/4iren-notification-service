@@ -1,7 +1,6 @@
 package com.siren.notificationservice.core.service;
 
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
-import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import com.siren.notificationservice.core.dto.response.RoomSubResponse;
 import com.siren.notificationservice.core.service.cache.LastMentionedRoomService;
 import lombok.RequiredArgsConstructor;

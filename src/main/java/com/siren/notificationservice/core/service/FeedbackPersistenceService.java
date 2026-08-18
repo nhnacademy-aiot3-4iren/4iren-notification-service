@@ -1,12 +1,15 @@
 package com.siren.notificationservice.core.service;
 
 import com.siren.notificationservice.core.client.CoreApiClient;
+import com.siren.notificationservice.core.dto.FeedbackLogCreateRequest;
 import com.siren.notificationservice.core.dto.RoomWeatherRegion;
 import com.siren.notificationservice.core.dto.response.OutsideWeather;
 import com.siren.notificationservice.core.dto.response.RoomEnvironmentReadingResponse;
 import com.siren.notificationservice.core.entity.table.OutsideWeatherSnapshot;
 import com.siren.notificationservice.core.entity.table.RoomEnvironmentSnapshot;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
+import com.siren.notificationservice.core.exception.OutsideWeatherSnapshotAlreadyExistsException;
+import com.siren.notificationservice.core.exception.RoomEnvironmentSnapshotAlreadyExistsException;
 import com.siren.notificationservice.core.service.basic_service.FeedbackLogService;
 import com.siren.notificationservice.core.service.basic_service.OutsideWeatherSnapshotService;
 import com.siren.notificationservice.core.service.basic_service.RoomEnvironmentSnapshotService;
@@ -14,11 +17,11 @@ import com.siren.notificationservice.core.service.cache.RoomWeatherRegionCacheSe
 import com.siren.notificationservice.telegram.dto.event.FeedbackProcessingEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
@@ -55,7 +58,7 @@ public class FeedbackPersistenceService {
         LocalDateTime createdAt = event.receivedAt();
         LocalDateTime experiencedAt = event.experiencedAt() != null ? event.experiencedAt() : null;
 
-        feedbackLogService.createFeedbackLogWithScores(
+        feedbackLogService.createFeedbackLogWithScores(new FeedbackLogCreateRequest(
                 event.userId(),
                 event.roomId(),
                 sensorSnapshot,
@@ -65,7 +68,7 @@ public class FeedbackPersistenceService {
                 event.isDelayed(),
                 experiencedAt,
                 event.sensorScores()
-        );
+        ));
     }
 
     private RoomEnvironmentSnapshot findRoomEnvironmentSnapshot(Long roomId, LocalDateTime referenceAt) {
@@ -75,10 +78,23 @@ public class FeedbackPersistenceService {
             RoomEnvironmentReadingResponse readings = fetchOrNull("강의실 실측값", roomId, referenceAt,
                     ()-> coreApiClient.getRoomSensorsReadings(roomId, referenceAt));
             sensorSnapshot = readings != null
-                    ? roomEnvironmentSnapshotService.createWithReadings(roomId, referenceAt, readings)
+                    ? createRoomEnvironmentSnapshotOrRecoverFromRace(roomId, referenceAt, readings)
                     : null;
         }
         return sensorSnapshot;
+    }
+
+    /**
+     * 동시에 다른 스레드/인스턴스가 같은 (roomId, referenceAt) 스냅샷을 먼저 만들었으면
+     * 실패시키지 않고 그 결과를 재조회해서 그대로 쓴다.
+     */
+    private RoomEnvironmentSnapshot createRoomEnvironmentSnapshotOrRecoverFromRace(
+            Long roomId, LocalDateTime referenceAt, RoomEnvironmentReadingResponse readings) {
+        try {
+            return roomEnvironmentSnapshotService.createWithReadings(roomId, referenceAt, readings);
+        } catch (RoomEnvironmentSnapshotAlreadyExistsException | DataIntegrityViolationException e) {
+            return roomEnvironmentSnapshotService.findSnapshotId(roomId, referenceAt);
+        }
     }
 
     /**
@@ -117,7 +133,6 @@ public class FeedbackPersistenceService {
     // 숫자/소수점/마이너스만 남기고 나머지는 전부 제거하는 쪽으로
     private static final Pattern NON_NUMERIC = Pattern.compile("[^0-9.\\-]");
     private static final DateTimeFormatter BASE_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-    private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul"); // Core 응답/이벤트 시각에 타임존이 없어 고정 — 다지역 확장 시 가장 먼저 깨질 지점
 
     /**
      * 같은 지역(nx, ny)·같은 시간대 스냅샷은 강의실이 달라도 공유 재사용한다. 생성 전에 한 번
@@ -135,8 +150,16 @@ public class FeedbackPersistenceService {
 
         LocalDateTime finalWindowStart = windowStart;
         OutsideWeatherSnapshot snapshot = outsideWeatherSnapshotService.findSnapshotId(weather.nx(), weather.ny(), finalWindowStart);
+        if (snapshot != null) {
+            return snapshot;
+        }
 
-        return snapshot != null ? snapshot : outsideWeatherSnapshotService.createOutsideWeatherSnapshot(weather.nx(), weather.ny(), finalWindowStart, parseNumeric(weather.temperature()), parseNumeric(weather.humidity()));
+        try {
+            return outsideWeatherSnapshotService.createOutsideWeatherSnapshot(
+                    weather.nx(), weather.ny(), finalWindowStart, parseNumeric(weather.temperature()), parseNumeric(weather.humidity()));
+        } catch (OutsideWeatherSnapshotAlreadyExistsException | DataIntegrityViolationException e) {
+            return outsideWeatherSnapshotService.findSnapshotId(weather.nx(), weather.ny(), finalWindowStart);
+        }
     }
 
     private BigDecimal parseNumeric(String rawValue) {
@@ -165,7 +188,7 @@ public class FeedbackPersistenceService {
         try{
             return call.get();
         }catch (CoreApiUnavailableException e){
-            /// core에서 환경 스냅샷을 못 받아와도 피드백 자체를 버리면 안됨 따라서 로그만 찍음
+            // core에서 환경 스냅샷을 못 받아와도 피드백 자체를 버리면 안됨 따라서 로그만 찍음
             log.warn("[FeedbackPersistenceService] {} 조회 실패, 스냅샷 없이 저장 (roomId={}, referenceAt={})", label ,roomId, referenceAt, e);
             return null;
         }

@@ -20,8 +20,8 @@ import java.util.List;
  */
 @Component
 public class FeedbackCsvConverter {
-    /// AI Learning 팀과 합의한 CSV 계약임
-    /// 변경 전 AI Learning팀과 협의해야함
+    // AI Learning 팀과 합의한 CSV 계약임
+    // 변경 전 AI Learning팀과 협의해야함
     private static final String HEADER = "feedback_log_id,room_id,reference_at,metric_type,value\n";
     private static final String OUTSIDE_TEMPERATURE = "OUTSIDE_TEMPERATURE";
     private static final String OUTSIDE_HUMIDITY = "OUTSIDE_HUMIDITY";

@@ -2,6 +2,7 @@ package com.siren.notificationservice.core.exception;
 
 import com.siren.notificationservice.core.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingRequestHeaderException;
@@ -16,6 +17,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final String GENERIC_INTERNAL_ERROR_MESSAGE = "서버 내부 오류가 발생했습니다.";
+
+    private final String activeProfile;
+
+    public GlobalExceptionHandler(@Value("${spring.profiles.active:}") String activeProfile) {
+        this.activeProfile = activeProfile;
+    }
 
     /**
      * 조회 대상이 없거나 요청자 소유가 아닐 때. 존재 여부를 노출하지 않도록 404로 응답한다.
@@ -65,10 +74,17 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), "잘못된 요청 파라미터입니다."));
     }
 
+    /**
+     * dev 프로파일에선 실제 예외 메시지를 그대로 내려서 디버깅에 쓴다.
+     * 그 외(prod, 알 수 없는 프로파일 등)는 내부 구현 노출을 막기 위해 항상 제네릭 메시지만 응답한다.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
         log.error("처리되지 않은 예외 발생", e);
+        String message = "dev".equals(activeProfile)
+                ? e.getClass().getSimpleName() + ": " + e.getMessage()
+                : GENERIC_INTERNAL_ERROR_MESSAGE;
         return ResponseEntity.internalServerError()
-                .body(ErrorResponse.of(HttpStatus.INTERNAL_SERVER_ERROR.value(), "서버 내부 오류가 발생했습니다."));
+                .body(ErrorResponse.of(HttpStatus.INTERNAL_SERVER_ERROR.value(), message));
     }
 }

@@ -1,5 +1,7 @@
 package com.siren.notificationservice.core.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.siren.notificationservice.core.dto.ConversationContext;
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
 import com.siren.notificationservice.core.dto.RoomWeatherRegion;
 import com.siren.notificationservice.core.dto.StoredMessage;
@@ -10,7 +12,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericToStringSerializer;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
@@ -66,5 +67,15 @@ public class RedisCacheConfig {
         chatMemoryTemplate.setValueSerializer(new Jackson2JsonRedisSerializer<>(objectMapper,objectMapper.getTypeFactory().constructCollectionType(List.class, StoredMessage.class)));
         return chatMemoryTemplate;
     }
+
+    @Bean
+    public RedisTemplate<String, ConversationContext> conversationContextRedisTemplate(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
+        RedisTemplate<String, ConversationContext> conversationContextTemplate = new RedisTemplate<>();
+        conversationContextTemplate.setConnectionFactory(redisConnectionFactory);
+        conversationContextTemplate.setKeySerializer(new StringRedisSerializer());
+        conversationContextTemplate.setValueSerializer(new Jackson2JsonRedisSerializer<>(objectMapper, ConversationContext.class));
+        return conversationContextTemplate;
+    }
+
 }
 

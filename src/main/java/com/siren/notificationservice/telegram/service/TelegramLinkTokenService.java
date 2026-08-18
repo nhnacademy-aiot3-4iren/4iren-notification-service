@@ -5,16 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.domain.UserRole;
 import com.siren.notificationservice.core.entity.table.TelegramSubscription;
-import com.siren.notificationservice.core.exception.MissingChatIdException;
-import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
-import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
+import com.siren.notificationservice.core.service.basic_service.TelegramSubscriptionService;
 import com.siren.notificationservice.telegram.config.TelegramBotProperties;
 import com.siren.notificationservice.telegram.dto.LinkTokenData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.List;
@@ -40,7 +37,7 @@ public class TelegramLinkTokenService {
     public static final Duration LINK_TOKEN_TTL = Duration.ofMinutes(LINK_TOKEN_TTL_MINUTES);
 
     private final StringRedisTemplate stringRedisTemplate;
-    private final TelegramSubscriptionRepository telegramSubscriptionRepository;
+    private final TelegramSubscriptionService telegramSubscriptionService;
     private final TelegramBotProperties telegramBotProperties;
     private final ObjectMapper objectMapper;
     private static final String DEEP_LINK_BASE_URL="https://t.me/";
@@ -65,11 +62,11 @@ public class TelegramLinkTokenService {
      * @return 리다이렉트 url
      */
     public String getRedirectUrl(Long userId, BotType botType) {
-        boolean alreadyLinked = isLinked(userId, botType);
+        boolean alreadyLinked = telegramSubscriptionService.isLinked(userId, botType);
         if(alreadyLinked) {
             return DEEP_LINK_BASE_URL + resolveBotUsername(botType);
         }
-        List<TelegramSubscription> ts = telegramSubscriptionRepository.findByUserId(userId);
+        List<TelegramSubscription> ts = telegramSubscriptionService.getTelegramSubscriptions(userId);
         UserRole role = ts.stream().map(TelegramSubscription::getUserRole).findFirst().orElse(UserRole.NORMAL);
         return getDeepLinkUrl(new LinkTokenData(userId, role), botType);
     }
@@ -110,38 +107,6 @@ public class TelegramLinkTokenService {
             return Optional.empty();
         }
     }
-
-    /**
-     * 특정 유저가 특정 봇에 이미 연동돼 있는지 확인한다.
-     * 프론트가 딥링크 토큰 발급 전 "이미 연동되어 있습니다, 재연동하시겠어요?" 확인
-     * 다이얼로그를 보여줄지 판단하는 데 쓴다.
-     *
-     * @param userId  대상 유저 id
-     * @param botType ADMIN_BOT 또는 USER_BOT
-     * @return 연동 여부
-     */
-    @Transactional(readOnly = true)
-    public boolean isLinked(Long userId, BotType botType) {
-        return telegramSubscriptionRepository.existsByUserIdAndBotType(userId, botType);
-    }
-
-    /**
-     * chatId와 botType으로 연동된 유저 id를 조회한다.
-     *
-     * @param chatId  대상 텔레그램 chat_id
-     * @param botType ADMIN_BOT 또는 USER_BOT
-     * @return 연동된 유저 id
-     */
-    @Transactional(readOnly = true)
-    public Long getUserIdByChatId(String chatId, BotType botType) {
-        if(chatId == null){
-            throw new MissingChatIdException();
-        }
-        return telegramSubscriptionRepository.findByChatIdAndBotType(chatId, botType)
-                .map(TelegramSubscription::getUserId)
-                .orElseThrow(TelegramSubscriptionNotFoundException::new);
-    }
-
 
 
     private String linkTokenKey(BotType botType, String token) {
