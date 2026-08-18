@@ -2,6 +2,7 @@ package com.siren.notificationservice.telegram.routing.handler.impl;
 
 import com.siren.notificationservice.core.client.CoreApiClient;
 import com.siren.notificationservice.core.client.RecommendationApiClient;
+import com.siren.notificationservice.core.dto.ConversationContext;
 import com.siren.notificationservice.core.dto.request.RecommendationRequest;
 import com.siren.notificationservice.core.dto.response.RecommendationResponse;
 import com.siren.notificationservice.core.dto.response.RoomSubResponse;
@@ -9,6 +10,7 @@ import com.siren.notificationservice.core.entity.domain.UserRole;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
 import com.siren.notificationservice.core.service.basic_service.TelegramSubscriptionService;
 import com.siren.notificationservice.core.service.cache.LastMentionedRoomService;
+import com.siren.notificationservice.core.service.cache.LlmConversationContextService;
 import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.routing.IntentType;
@@ -29,6 +31,7 @@ public class QuestionRouteHandler implements IntentRouteHandler {
     private final CoreApiClient coreApiClient;
     private final LastMentionedRoomService lastMentionedRoomService;
     private final TelegramMessageService  telegramMessageService;
+    private final LlmConversationContextService llmConversationContextService;
 
     @Override
     public IntentType supports() {
@@ -66,6 +69,8 @@ public class QuestionRouteHandler implements IntentRouteHandler {
         if(response.answer().options()!=null && !response.answer().options().isEmpty()) {
             telegramMessageService.sendInlineKeyboardMessage(event.chatId(), event.botType(), response.answer().answer(), CallbackActionType.QUESTION_CONTINUE, response.answer().options());
         }else{
+            llmConversationContextService.save(userId, new ConversationContext(
+                    IntentType.QUESTION.name(), event.question(), response.answer().answer()));
             telegramMessageService.sendMessage(event.chatId(), event.botType(),response.answer().answer(),"[Recommendation API] - LLM 답변");
         }
     }

@@ -1,11 +1,13 @@
 package com.siren.notificationservice.telegram.routing.handler.impl;
 
 import com.siren.notificationservice.core.client.CoreApiClient;
+import com.siren.notificationservice.core.dto.ConversationContext;
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
 import com.siren.notificationservice.core.dto.response.RoomSubResponse;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
-import com.siren.notificationservice.core.service.cache.FeedbackExtractionCacheService;
 import com.siren.notificationservice.core.service.FeedbackRoomResolver;
+import com.siren.notificationservice.core.service.cache.FeedbackExtractionCacheService;
+import com.siren.notificationservice.core.service.cache.LlmConversationContextService;
 import com.siren.notificationservice.telegram.agent.FeedbackExtractionAgent;
 import com.siren.notificationservice.telegram.dto.event.FeedbackProcessingEvent;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
@@ -33,6 +35,7 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
     private final FeedbackExtractionAgent feedbackExtractionAgent;
     private final FeedbackRoomResolver feedbackRoomResolver;
     private final FeedbackProcessingEventPublisher feedbackProcessingEventPublisher;
+    private final LlmConversationContextService llmConversationContextService;
 
 
     @Override
@@ -132,7 +135,9 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
             telegramMessageService.sendFeedbackProcessingFailedMessage(event.chatId(), event.botType());
             return;
         }
-        telegramMessageService.sendFeedbackAcknowledgeMessage(event.chatId(), event.botType(),roomName);
+        String text = telegramMessageService.sendFeedbackAcknowledgeMessage(event.chatId(), event.botType(),roomName);
+
+        llmConversationContextService.save(userId, new ConversationContext(IntentType.FEEDBACK.name(), rawText, text));
     }
 
 

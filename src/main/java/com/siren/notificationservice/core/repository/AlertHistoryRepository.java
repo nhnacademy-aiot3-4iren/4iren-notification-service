@@ -23,7 +23,7 @@ public interface AlertHistoryRepository extends JpaRepository<AlertHistory, Long
     /**
      * AlertHistory 삭제 주기 배치
      */
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query(value = "DELETE FROM alert_history WHERE send_at < :cutoff LIMIT :batchSize", nativeQuery = true)
     int deleteBatch(@Param("cutoff") LocalDateTime cutoff, @Param("batchSize") int batchSize);
 

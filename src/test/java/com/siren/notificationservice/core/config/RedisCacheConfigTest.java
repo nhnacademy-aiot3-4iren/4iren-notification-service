@@ -1,6 +1,7 @@
 package com.siren.notificationservice.core.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.siren.notificationservice.core.dto.ConversationContext;
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
 import com.siren.notificationservice.core.dto.RoomWeatherRegion;
 import com.siren.notificationservice.core.dto.StoredMessage;
@@ -55,6 +56,16 @@ class RedisCacheConfigTest {
     void chatMemoryRedisTemplateUsesJacksonSerializer() {
         RedisTemplate<String, List<StoredMessage>> template =
                 config.chatMemoryRedisTemplate(connectionFactory, objectMapper);
+
+        assertThat(template.getConnectionFactory()).isSameAs(connectionFactory);
+        assertThat(template.getKeySerializer()).isInstanceOf(StringRedisSerializer.class);
+        assertThat(template.getValueSerializer()).isInstanceOf(Jackson2JsonRedisSerializer.class);
+    }
+
+    @Test
+    void conversationContextRedisTemplateUsesJacksonSerializer() {
+        RedisTemplate<String, ConversationContext> template =
+                config.conversationContextRedisTemplate(connectionFactory, objectMapper);
 
         assertThat(template.getConnectionFactory()).isSameAs(connectionFactory);
         assertThat(template.getKeySerializer()).isInstanceOf(StringRedisSerializer.class);

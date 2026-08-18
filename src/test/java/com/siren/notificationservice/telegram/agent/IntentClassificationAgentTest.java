@@ -6,6 +6,7 @@ import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import com.siren.notificationservice.telegram.routing.IntentType;
 import com.siren.notificationservice.telegram.routing.handler.IntentRouteDispatcher;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -86,5 +87,24 @@ class IntentClassificationAgentTest {
         agent.classify(event, 1L);
 
         verify(intentRouteDispatcher).dispatch(IntentType.FALLBACK, event, 1L);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void classifyUsesUserIdNotChatIdAsConversationId() {
+        when(callResponseSpec.content()).thenReturn("{\"intent\":\"FALLBACK\"}");
+        IntentClassificationAgent agent = buildAgent();
+        TelegramInboundEvent event = textEvent("아무말"); // textEvent()가 chat.setId(100L)로 chatId를 100 고정
+
+        agent.classify(event, 42L);
+
+        ArgumentCaptor<Consumer<ChatClient.AdvisorSpec>> captor = ArgumentCaptor.forClass(Consumer.class);
+        verify(requestSpec).advisors(captor.capture());
+        ChatClient.AdvisorSpec advisorSpec = mock(ChatClient.AdvisorSpec.class);
+        when(advisorSpec.param(anyString(), any())).thenReturn(advisorSpec);
+
+        captor.getValue().accept(advisorSpec);
+
+        verify(advisorSpec).param(ChatMemory.CONVERSATION_ID, "USER_BOT:42");
     }
 }

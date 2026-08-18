@@ -16,7 +16,7 @@ public interface FeedbackLogRepository extends JpaRepository<FeedbackLog, Long> 
     @Query(value = "SELECT feedback_log_id FROM feedback_log WHERE created_at < :cutoff LIMIT :batchSize", nativeQuery = true)
     List<Long> findOldLogIds(@Param("cutoff")LocalDateTime cutoff, @Param("batchSize")int batchSize);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query(value = "DELETE FROM feedback_log WHERE feedback_log_id IN (:ids)",nativeQuery = true)
     void deleteLogsByIds(@Param("ids") List<Long> ids);
 }

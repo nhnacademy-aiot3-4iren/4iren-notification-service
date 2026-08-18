@@ -21,7 +21,7 @@ import java.util.List;
 @Component
 public class RedisChatMemoryRepositoryImpl extends AbstractRedisTtlCache<String,List<StoredMessage>> implements ChatMemoryRepository {
     private static final Duration TTL = Duration.ofMinutes(20);
-    private static final String PREFIX = "telegram:chat-memory:";
+    private static final String PREFIX = "telegram:chat-memory:intent:";
     private final StringRedisTemplate stringRedisTemplate;
 
     public RedisChatMemoryRepositoryImpl(@Qualifier("chatMemoryRedisTemplate") RedisTemplate<String, List<StoredMessage>> redisTemplate,

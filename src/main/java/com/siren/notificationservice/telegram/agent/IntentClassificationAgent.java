@@ -22,7 +22,7 @@ public class IntentClassificationAgent {
         [분류 기준]
         - FEEDBACK: 사용자가 지금 있거나 있었던 강의실의 환경(온도/습도/공기질 등)에 대해 본인이 느낀 바를 말하는 경우.
           예: "너무 더워요", "좀 습한 것 같아요", "3시쯤에 너무 추웠어요", "지금은 딱 좋아요"
-        - QUESTION: 강의실 상태를 묻거나, 실내 환경/공간 이용과 관련된 질문을 하는 경우.
+        - QUESTION: 강의실 상태를 묻거나, 실내 환경/공간 이용과 관련된 질문을 하는 경우, 강의실 구독 관련 질문
           예: "지금 몇 도야?", "공기질 어때?", "환기는 언제 하는 게 좋아?", "적정 습도가 몇이야?"
         - FALLBACK: 위 두 가지 어디에도 해당하지 않는 경우 (인사, 잡담, 의미를 알 수 없는 메시지, 봇 기능과 무관한 내용).
           예: "안녕", "ㅋㅋㅋ", "고마워요"
@@ -66,8 +66,8 @@ public class IntentClassificationAgent {
             long timingStart = System.currentTimeMillis();
             String json = chatClient.prompt()
                     .user(userMessage)
-                    // conversationId = chatId: 채팅방 단위로 대화 이력이 분리됨(유저 단위가 아님에 주의)
-                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, event.botType()+":"+event.chatId()))
+                    // conversationId = userId: 텔레그램 재연동으로 chatId가 바뀌어도 대화 이력이 끊기지 않음
+                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, event.botType()+":"+userId))
                     .options(googleGenAiChatOptions)
                     .call()
                     .content();

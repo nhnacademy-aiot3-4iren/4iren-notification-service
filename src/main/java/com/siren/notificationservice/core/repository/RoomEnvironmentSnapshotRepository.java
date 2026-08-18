@@ -29,7 +29,7 @@ public interface RoomEnvironmentSnapshotRepository extends JpaRepository<RoomEnv
     List<Long> findOrphanSnapshotIds(@Param("batchSize") int batchSize);
 
     // 조회~삭제 사이에 새 feedback_log가 그 스냅샷을 참조하게 되는 레이스 대비: 삭제 시점에 참조 없는 것만 지운다(0건 삭제는 정상).
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query(value = "DELETE FROM room_environment_snapshot WHERE snapshot_id IN (:ids) "
             + "AND snapshot_id NOT IN (SELECT fl.snapshot_id FROM feedback_log fl WHERE fl.snapshot_id IS NOT NULL)",
             nativeQuery = true)
