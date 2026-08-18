@@ -33,6 +33,12 @@ class TelegramSubscriptionServiceTest {
     }
 
     @Test
+    void findActiveAdminSubscriptionsThrowsWhenUserIdsIsNull() {
+        assertThatThrownBy(() -> service.findActiveAdminSubscriptions(null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     void findActiveSubscriptionsQueriesAllBotTypes() {
         List<Long> userIds = List.of(1L, 2L);
         List<TelegramSubscription> expected = List.of(mock(TelegramSubscription.class));
@@ -42,10 +48,28 @@ class TelegramSubscriptionServiceTest {
     }
 
     @Test
+    void findActiveSubscriptionsThrowsWhenUserIdsIsNull() {
+        assertThatThrownBy(() -> service.findActiveSubscriptions(null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     void isLinkedDelegatesToRepository() {
         when(repository.existsByUserIdAndBotType(1L, BotType.ADMIN_BOT)).thenReturn(true);
 
         assertThat(service.isLinked(1L, BotType.ADMIN_BOT)).isTrue();
+    }
+
+    @Test
+    void isLinkedThrowsWhenUserIdIsNull() {
+        assertThatThrownBy(() -> service.isLinked(null, BotType.ADMIN_BOT))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void isLinkedThrowsWhenBotTypeIsNull() {
+        assertThatThrownBy(() -> service.isLinked(1L, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -71,6 +95,26 @@ class TelegramSubscriptionServiceTest {
 
         assertThatThrownBy(() -> service.getUserIdByChatId("100", BotType.USER_BOT))
                 .isInstanceOf(TelegramSubscriptionNotFoundException.class);
+    }
+
+    @Test
+    void getUserIdByChatIdThrowsWhenBotTypeIsNull() {
+        assertThatThrownBy(() -> service.getUserIdByChatId("100", null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void getTelegramSubscriptionsReturnsSubscriptionsForUser() {
+        List<TelegramSubscription> expected = List.of(mock(TelegramSubscription.class));
+        when(repository.findByUserId(1L)).thenReturn(expected);
+
+        assertThat(service.getTelegramSubscriptions(1L)).isEqualTo(expected);
+    }
+
+    @Test
+    void getTelegramSubscriptionsThrowsWhenUserIdIsNull() {
+        assertThatThrownBy(() -> service.getTelegramSubscriptions(null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test

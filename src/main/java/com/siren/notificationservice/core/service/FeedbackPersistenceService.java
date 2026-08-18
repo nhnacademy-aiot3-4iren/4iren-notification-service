@@ -8,6 +8,8 @@ import com.siren.notificationservice.core.dto.response.RoomEnvironmentReadingRes
 import com.siren.notificationservice.core.entity.table.OutsideWeatherSnapshot;
 import com.siren.notificationservice.core.entity.table.RoomEnvironmentSnapshot;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
+import com.siren.notificationservice.core.exception.OutsideWeatherSnapshotAlreadyExistsException;
+import com.siren.notificationservice.core.exception.RoomEnvironmentSnapshotAlreadyExistsException;
 import com.siren.notificationservice.core.service.basic_service.FeedbackLogService;
 import com.siren.notificationservice.core.service.basic_service.OutsideWeatherSnapshotService;
 import com.siren.notificationservice.core.service.basic_service.RoomEnvironmentSnapshotService;
@@ -15,6 +17,7 @@ import com.siren.notificationservice.core.service.cache.RoomWeatherRegionCacheSe
 import com.siren.notificationservice.telegram.dto.event.FeedbackProcessingEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -75,10 +78,23 @@ public class FeedbackPersistenceService {
             RoomEnvironmentReadingResponse readings = fetchOrNull("강의실 실측값", roomId, referenceAt,
                     ()-> coreApiClient.getRoomSensorsReadings(roomId, referenceAt));
             sensorSnapshot = readings != null
-                    ? roomEnvironmentSnapshotService.createWithReadings(roomId, referenceAt, readings)
+                    ? createRoomEnvironmentSnapshotOrRecoverFromRace(roomId, referenceAt, readings)
                     : null;
         }
         return sensorSnapshot;
+    }
+
+    /**
+     * 동시에 다른 스레드/인스턴스가 같은 (roomId, referenceAt) 스냅샷을 먼저 만들었으면
+     * 실패시키지 않고 그 결과를 재조회해서 그대로 쓴다.
+     */
+    private RoomEnvironmentSnapshot createRoomEnvironmentSnapshotOrRecoverFromRace(
+            Long roomId, LocalDateTime referenceAt, RoomEnvironmentReadingResponse readings) {
+        try {
+            return roomEnvironmentSnapshotService.createWithReadings(roomId, referenceAt, readings);
+        } catch (RoomEnvironmentSnapshotAlreadyExistsException | DataIntegrityViolationException e) {
+            return roomEnvironmentSnapshotService.findSnapshotId(roomId, referenceAt);
+        }
     }
 
     /**
@@ -134,8 +150,16 @@ public class FeedbackPersistenceService {
 
         LocalDateTime finalWindowStart = windowStart;
         OutsideWeatherSnapshot snapshot = outsideWeatherSnapshotService.findSnapshotId(weather.nx(), weather.ny(), finalWindowStart);
+        if (snapshot != null) {
+            return snapshot;
+        }
 
-        return snapshot != null ? snapshot : outsideWeatherSnapshotService.createOutsideWeatherSnapshot(weather.nx(), weather.ny(), finalWindowStart, parseNumeric(weather.temperature()), parseNumeric(weather.humidity()));
+        try {
+            return outsideWeatherSnapshotService.createOutsideWeatherSnapshot(
+                    weather.nx(), weather.ny(), finalWindowStart, parseNumeric(weather.temperature()), parseNumeric(weather.humidity()));
+        } catch (OutsideWeatherSnapshotAlreadyExistsException | DataIntegrityViolationException e) {
+            return outsideWeatherSnapshotService.findSnapshotId(weather.nx(), weather.ny(), finalWindowStart);
+        }
     }
 
     private BigDecimal parseNumeric(String rawValue) {

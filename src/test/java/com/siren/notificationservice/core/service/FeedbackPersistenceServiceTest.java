@@ -8,12 +8,15 @@ import com.siren.notificationservice.core.dto.response.RoomEnvironmentReadingRes
 import com.siren.notificationservice.core.entity.table.OutsideWeatherSnapshot;
 import com.siren.notificationservice.core.entity.table.RoomEnvironmentSnapshot;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
+import com.siren.notificationservice.core.exception.OutsideWeatherSnapshotAlreadyExistsException;
+import com.siren.notificationservice.core.exception.RoomEnvironmentSnapshotAlreadyExistsException;
 import com.siren.notificationservice.core.service.basic_service.FeedbackLogService;
 import com.siren.notificationservice.core.service.basic_service.OutsideWeatherSnapshotService;
 import com.siren.notificationservice.core.service.basic_service.RoomEnvironmentSnapshotService;
 import com.siren.notificationservice.core.service.cache.RoomWeatherRegionCacheService;
 import com.siren.notificationservice.telegram.dto.event.FeedbackProcessingEvent;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -84,6 +87,51 @@ class FeedbackPersistenceServiceTest {
     }
 
     @Test
+    void persistRecoversRoomSnapshotWhenAnotherThreadCreatedItFirst() {
+        LocalDateTime referenceAt = LocalDateTime.now();
+        FeedbackProcessingEvent event = event();
+        when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(null);
+        RoomEnvironmentReadingResponse readingResponse = new RoomEnvironmentReadingResponse(7L, null, List.of());
+        when(coreApiClient.getRoomSensorsReadings(7L, referenceAt)).thenReturn(readingResponse);
+        when(roomEnvironmentSnapshotService.createWithReadings(7L, referenceAt, readingResponse))
+                .thenThrow(new RoomEnvironmentSnapshotAlreadyExistsException(7L, referenceAt));
+        RoomEnvironmentSnapshot racedInSnapshot = RoomEnvironmentSnapshot.builder()
+                .snapshotId(12L).roomId(7L).windowStart(referenceAt).build();
+        when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt))
+                .thenReturn(null, racedInSnapshot); // 사전 체크 땐 없다가, 레이스 복구 재조회 땐 있음
+        when(regionCacheService.find(7L)).thenReturn(Optional.empty());
+        when(coreApiClient.getOutsideWeather(any(), any())).thenThrow(new CoreApiUnavailableException(7L, "roomId"));
+
+        feedbackPersistenceService.persist(event, referenceAt);
+
+        verify(feedbackLogService).createFeedbackLogWithScores(new FeedbackLogCreateRequest(
+                event.userId(), event.roomId(), racedInSnapshot, null, event.rawText(), event.receivedAt(),
+                event.isDelayed(), event.experiencedAt(), event.sensorScores()));
+    }
+
+    @Test
+    void persistRecoversRoomSnapshotWhenDbConstraintRejectsDuplicate() {
+        LocalDateTime referenceAt = LocalDateTime.now();
+        FeedbackProcessingEvent event = event();
+        RoomEnvironmentReadingResponse readingResponse = new RoomEnvironmentReadingResponse(7L, null, List.of());
+        when(coreApiClient.getRoomSensorsReadings(7L, referenceAt)).thenReturn(readingResponse);
+        when(roomEnvironmentSnapshotService.createWithReadings(7L, referenceAt, readingResponse))
+                .thenThrow(new DataIntegrityViolationException("duplicate"));
+        RoomEnvironmentSnapshot racedInSnapshot = RoomEnvironmentSnapshot.builder()
+                .snapshotId(12L).roomId(7L).windowStart(referenceAt).build();
+        when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt))
+                .thenReturn(null, racedInSnapshot);
+        when(regionCacheService.find(7L)).thenReturn(Optional.empty());
+        when(coreApiClient.getOutsideWeather(any(), any())).thenThrow(new CoreApiUnavailableException(7L, "roomId"));
+
+        feedbackPersistenceService.persist(event, referenceAt);
+
+        verify(feedbackLogService).createFeedbackLogWithScores(new FeedbackLogCreateRequest(
+                event.userId(), event.roomId(), racedInSnapshot, null, event.rawText(), event.receivedAt(),
+                event.isDelayed(), event.experiencedAt(), event.sensorScores()));
+    }
+
+    @Test
     void persistKeepsGoingWithNullSnapshotWhenCoreFailsForRoomReadings() {
         LocalDateTime referenceAt = LocalDateTime.now();
         FeedbackProcessingEvent event = event();
@@ -126,6 +174,58 @@ class FeedbackPersistenceServiceTest {
         verify(regionCacheService).save(7L, new RoomWeatherRegion(60, 127));
         verify(feedbackLogService).createFeedbackLogWithScores(new FeedbackLogCreateRequest(
                 event.userId(), event.roomId(), roomSnapshot, createdWeatherSnapshot, event.rawText(), event.receivedAt(),
+                event.isDelayed(), event.experiencedAt(), event.sensorScores()));
+    }
+
+    @Test
+    void persistRecoversWeatherSnapshotWhenAnotherRoomCreatedItFirst() {
+        LocalDateTime referenceAt = LocalDateTime.now();
+        FeedbackProcessingEvent event = event();
+        RoomEnvironmentSnapshot roomSnapshot = RoomEnvironmentSnapshot.builder()
+                .snapshotId(10L).roomId(7L).windowStart(referenceAt).build();
+        when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(roomSnapshot);
+        when(regionCacheService.find(7L)).thenReturn(Optional.empty());
+        OutsideWeather weather = new OutsideWeather("2026-07-24 13:00", "33.7℃", "69%", 60, 127);
+        when(coreApiClient.getOutsideWeather(7L, referenceAt)).thenReturn(weather);
+        LocalDateTime windowStart = LocalDateTime.parse("2026-07-24 13:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        when(outsideWeatherSnapshotService.createOutsideWeatherSnapshot(
+                60, 127, windowStart, BigDecimal.valueOf(33.7), BigDecimal.valueOf(69)))
+                .thenThrow(new OutsideWeatherSnapshotAlreadyExistsException(60, 127, windowStart));
+        OutsideWeatherSnapshot racedInSnapshot = OutsideWeatherSnapshot.builder()
+                .weatherSnapshotId(22L).nx(60).ny(127).windowStart(windowStart).build();
+        when(outsideWeatherSnapshotService.findSnapshotId(60, 127, windowStart))
+                .thenReturn(null, racedInSnapshot); // 사전 체크 땐 없다가, 레이스 복구 재조회 땐 있음
+
+        feedbackPersistenceService.persist(event, referenceAt);
+
+        verify(feedbackLogService).createFeedbackLogWithScores(new FeedbackLogCreateRequest(
+                event.userId(), event.roomId(), roomSnapshot, racedInSnapshot, event.rawText(), event.receivedAt(),
+                event.isDelayed(), event.experiencedAt(), event.sensorScores()));
+    }
+
+    @Test
+    void persistRecoversWeatherSnapshotWhenDbConstraintRejectsDuplicate() {
+        LocalDateTime referenceAt = LocalDateTime.now();
+        FeedbackProcessingEvent event = event();
+        RoomEnvironmentSnapshot roomSnapshot = RoomEnvironmentSnapshot.builder()
+                .snapshotId(10L).roomId(7L).windowStart(referenceAt).build();
+        when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(roomSnapshot);
+        when(regionCacheService.find(7L)).thenReturn(Optional.empty());
+        OutsideWeather weather = new OutsideWeather("2026-07-24 13:00", "33.7℃", "69%", 60, 127);
+        when(coreApiClient.getOutsideWeather(7L, referenceAt)).thenReturn(weather);
+        LocalDateTime windowStart = LocalDateTime.parse("2026-07-24 13:00", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        when(outsideWeatherSnapshotService.createOutsideWeatherSnapshot(
+                60, 127, windowStart, BigDecimal.valueOf(33.7), BigDecimal.valueOf(69)))
+                .thenThrow(new DataIntegrityViolationException("duplicate"));
+        OutsideWeatherSnapshot racedInSnapshot = OutsideWeatherSnapshot.builder()
+                .weatherSnapshotId(22L).nx(60).ny(127).windowStart(windowStart).build();
+        when(outsideWeatherSnapshotService.findSnapshotId(60, 127, windowStart))
+                .thenReturn(null, racedInSnapshot);
+
+        feedbackPersistenceService.persist(event, referenceAt);
+
+        verify(feedbackLogService).createFeedbackLogWithScores(new FeedbackLogCreateRequest(
+                event.userId(), event.roomId(), roomSnapshot, racedInSnapshot, event.rawText(), event.receivedAt(),
                 event.isDelayed(), event.experiencedAt(), event.sensorScores()));
     }
 

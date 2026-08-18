@@ -29,7 +29,7 @@ public class RoomEnvironmentSnapshotService {
     private static final String ROOM_ID_NULL_MESSAGE = "roomId는 null일 수 없습니다.";
     private static final String SNAPSHOT_ID_NULL_MESSAGE = "snapshotId는 null일 수 없습니다.";
     private static final String REFERENCE_AT_NULL_MESSAGE = "referenceAt은 null일 수 없습니다.";
-    private static final String READINGS_NULL_MESSAGE = "referenceAt은 null일 수 없습니다.";
+    private static final String READINGS_NULL_MESSAGE = "readings는 null일 수 없습니다.";
     private final RoomEnvironmentSnapshotRepository roomEnvironmentSnapshotRepository;
     private final RoomEnvironmentReadingService roomEnvironmentReadingService;
 
