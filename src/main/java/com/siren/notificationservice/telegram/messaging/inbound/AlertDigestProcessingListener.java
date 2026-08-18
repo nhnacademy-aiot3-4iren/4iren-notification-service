@@ -16,7 +16,7 @@ public class AlertDigestProcessingListener {
 
     /**
      * alert.digest.* 라우팅 키로 들어오는 비긴급 알림(VENTILATION_RECOMMEND)을 처리한다.
-     * DLQ가 없어서 우선 try-catch로 무한 재큐잉 방지함.
+     * 예외를 삼키지 않고 그대로 던져서 재시도→DLQ로 보낸다.
      */
     @RabbitListener(queues = "#{@alertDigestQueue.name}")
     public void handle(AlertEvent event) {

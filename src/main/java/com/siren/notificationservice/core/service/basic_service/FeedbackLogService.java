@@ -1,19 +1,16 @@
 package com.siren.notificationservice.core.service.basic_service;
 
+import com.siren.notificationservice.core.dto.FeedbackLogCreateRequest;
 import com.siren.notificationservice.core.entity.domain.FeedbackScoreId;
 import com.siren.notificationservice.core.entity.table.FeedbackLog;
 import com.siren.notificationservice.core.entity.table.FeedbackScore;
-import com.siren.notificationservice.core.entity.table.OutsideWeatherSnapshot;
-import com.siren.notificationservice.core.entity.table.RoomEnvironmentSnapshot;
 import com.siren.notificationservice.core.repository.FeedbackLogRepository;
-import com.siren.notificationservice.telegram.dto.feedback.FeedbackExtractionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -24,6 +21,9 @@ import java.util.Objects;
 @Slf4j
 @RequiredArgsConstructor
 public class FeedbackLogService {
+    private static final String FEEDBACK_LOG_ID_NULL_MESSAGE = "feedbackLogId는 null일 수 없습니다.";
+    private static final String SINCE_ID_NULL_MESSAGE = "sinceId는 null일 수 없습니다.";
+
     private final FeedbackLogRepository feedbackLogRepository;
     private final FeedbackScoreService feedbackScoreService;
 
@@ -32,43 +32,34 @@ public class FeedbackLogService {
      */
     @Transactional(readOnly = true)
     public FeedbackLog getFeedbackLog(Long feedbackLogId) {
-        Objects.requireNonNull(feedbackLogId, "feedbackLogId는 null일 수 없습니다.");
+        Objects.requireNonNull(feedbackLogId, FEEDBACK_LOG_ID_NULL_MESSAGE);
         return feedbackLogRepository.findById(feedbackLogId).orElse(null);
     }
 
-    private FeedbackLog createFeedbackLog(Long userId, Long roomId, RoomEnvironmentSnapshot snapshot,
-                                           OutsideWeatherSnapshot outsideWeatherSnapshot, String rawText,
-                                           LocalDateTime createdAt, boolean delayed, LocalDateTime experiencedAt) {
-        Objects.requireNonNull(userId, "userId는 null일 수 없습니다.");
-        Objects.requireNonNull(roomId, "roomId는 null일 수 없습니다.");
-        Objects.requireNonNull(rawText, "rawText는 null일 수 없습니다.");
-        Objects.requireNonNull(createdAt, "createdAt은 null일 수 없습니다.");
+    private FeedbackLog createFeedbackLog(FeedbackLogCreateRequest request) {
         return feedbackLogRepository.save(FeedbackLog.builder()
-                .userId(userId)
-                .roomId(roomId)
-                .snapshot(snapshot)
-                .outsideWeatherSnapshot(outsideWeatherSnapshot)
-                .rawText(rawText)
-                .createdAt(createdAt)
-                .delayed(delayed)
-                .experiencedAt(experiencedAt)
+                .userId(request.userId())
+                .roomId(request.roomId())
+                .snapshot(request.snapshot())
+                .outsideWeatherSnapshot(request.outsideWeatherSnapshot())
+                .rawText(request.rawText())
+                .createdAt(request.createdAt())
+                .delayed(request.delayed())
+                .experiencedAt(request.experiencedAt())
                 .build());
     }
 
     /**
      * FeedbackLog와 FeedbackScore들을 하나의 트랜잭션으로 저장한다(둘이 원자적으로 묶여야 함).
+     * 필수값 검증은 FeedbackLogCreateRequest 생성 시점에 이미 끝나 있다.
      */
     @Transactional
-    public void createFeedbackLogWithScores(Long userId, Long roomId, RoomEnvironmentSnapshot snapshot,
-                                                    OutsideWeatherSnapshot outsideWeatherSnapshot, String rawText,
-                                                    LocalDateTime createdAt, boolean delayed, LocalDateTime experiencedAt,
-                                                    List<FeedbackExtractionResult.SensorScore> sensorScores) {
-        Objects.requireNonNull(sensorScores, "sensorScores는 null일 수 없습니다.");
-        FeedbackLog feedbackLog = createFeedbackLog(userId, roomId, snapshot, outsideWeatherSnapshot, rawText, createdAt, delayed, experiencedAt);
+    public void createFeedbackLogWithScores(FeedbackLogCreateRequest request) {
+        FeedbackLog feedbackLog = createFeedbackLog(request);
 
         // sensorScores는 이미 FeedbackExtractionAgent가 "언급된 축만" 뽑아둔 결과라
         // 여기선 그대로 각각 한 row로 매핑해서 한 번에 저장하기만 하면 된다.
-        List<FeedbackScore> feedbackScores = sensorScores.stream()
+        List<FeedbackScore> feedbackScores = request.sensorScores().stream()
                 .map(s -> FeedbackScore.builder()
                         .id(FeedbackScoreId.builder().sensorType(s.sensorType()).build()) // feedbackLogId는 @MapsId("feedbackLogId")가 feedbackLog 연관관계에서 채워줌
                         .feedbackLog(feedbackLog)
@@ -83,7 +74,7 @@ public class FeedbackLogService {
      */
     @Transactional(readOnly = true)
     public List<FeedbackLog> getFeedbackLogs(Long sinceId, int limit) {
-        Objects.requireNonNull(sinceId, "sinceId는 null일 수 없습니다.");
+        Objects.requireNonNull(sinceId, SINCE_ID_NULL_MESSAGE);
         if (limit <= 0) {
             log.warn("[FeedbackLogService] limit이 음수값으로 들어와 1로 보정합니다 (limit={})", limit);
             limit = 1;

@@ -16,7 +16,7 @@ public class AlertUrgentProcessingListener {
 
     /**
      * alert.urgent.* 라우팅 키로 들어오는 긴급 알림(COMFORT_LIMIT_EXCEEDED/SENSOR_ANOMALY)을 처리한다.
-     * DLQ가 없어서 우선 try-catch로 무한 재큐잉 방지함.
+     * 예외를 삼키지 않고 그대로 던져서 재시도→DLQ로 보낸다.
      */
     @RabbitListener(queues = "#{@alertUrgentQueue.name}", containerFactory = "urgentContainerFactory")
     public void handle(AlertEvent event) {

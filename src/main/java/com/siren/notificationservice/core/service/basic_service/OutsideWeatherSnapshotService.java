@@ -19,6 +19,12 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class OutsideWeatherSnapshotService {
+    private static final String WEATHER_SNAPSHOT_ID_NULL_MESSAGE = "weatherSnapshotId는 null일 수 없습니다.";
+    private static final String WEATHER_SNAPSHOT_IDS_NULL_MESSAGE = "weatherSnapshotIds는 null일 수 없습니다.";
+    private static final String NX_NULL_MESSAGE = "nx는 null일 수 없습니다.";
+    private static final String NY_NULL_MESSAGE = "ny는 null일 수 없습니다.";
+    private static final String WINDOW_START_NULL_MESSAGE = "windowStart는 null일 수 없습니다.";
+
     private final OutsideWeatherSnapshotRepository outsideWeatherSnapshotRepository;
 
     /**
@@ -26,7 +32,7 @@ public class OutsideWeatherSnapshotService {
      */
     @Transactional(readOnly = true)
     public OutsideWeatherSnapshot getOutsideWeatherSnapshot(Long weatherSnapshotId) {
-        Objects.requireNonNull(weatherSnapshotId, "weatherSnapshotId는 null일 수 없습니다.");
+        Objects.requireNonNull(weatherSnapshotId, WEATHER_SNAPSHOT_ID_NULL_MESSAGE);
         return outsideWeatherSnapshotRepository.findById(weatherSnapshotId).orElse(null);
     }
 
@@ -35,7 +41,7 @@ public class OutsideWeatherSnapshotService {
      */
     @Transactional(readOnly = true)
     public List<OutsideWeatherSnapshot> getByIds(List<Long> weatherSnapshotIds) {
-        Objects.requireNonNull(weatherSnapshotIds, "weatherSnapshotIds는 null일 수 없습니다.");
+        Objects.requireNonNull(weatherSnapshotIds, WEATHER_SNAPSHOT_IDS_NULL_MESSAGE);
         return outsideWeatherSnapshotRepository.findAllById(weatherSnapshotIds);
     }
 
@@ -44,9 +50,9 @@ public class OutsideWeatherSnapshotService {
      */
     @Transactional(readOnly = true)
     public OutsideWeatherSnapshot findSnapshotId(Integer nx, Integer ny, LocalDateTime windowStart) {
-        Objects.requireNonNull(nx, "nx는 null일 수 없습니다.");
-        Objects.requireNonNull(ny, "ny는 null일 수 없습니다.");
-        Objects.requireNonNull(windowStart, "windowStart는 null일 수 없습니다.");
+        Objects.requireNonNull(nx, NX_NULL_MESSAGE);
+        Objects.requireNonNull(ny, NY_NULL_MESSAGE);
+        Objects.requireNonNull(windowStart, WINDOW_START_NULL_MESSAGE);
         return outsideWeatherSnapshotRepository.findByNxAndNyAndWindowStart(nx, ny, windowStart)
                 .orElse(null);
     }
@@ -57,10 +63,10 @@ public class OutsideWeatherSnapshotService {
     @Transactional
     public OutsideWeatherSnapshot createOutsideWeatherSnapshot(Integer nx, Integer ny, LocalDateTime windowStart,
                                                                 BigDecimal outsideTemperature, BigDecimal outsideHumidity) {
-        Objects.requireNonNull(nx, "nx는 null일 수 없습니다.");
-        Objects.requireNonNull(ny, "ny는 null일 수 없습니다.");
-        Objects.requireNonNull(windowStart, "windowStart는 null일 수 없습니다.");
-        if (findSnapshotId(nx, ny, windowStart) != null) {
+        Objects.requireNonNull(nx, NX_NULL_MESSAGE);
+        Objects.requireNonNull(ny, NY_NULL_MESSAGE);
+        Objects.requireNonNull(windowStart, WINDOW_START_NULL_MESSAGE);
+        if (outsideWeatherSnapshotRepository.findByNxAndNyAndWindowStart(nx, ny, windowStart).isPresent()) {
             throw new OutsideWeatherSnapshotAlreadyExistsException(nx, ny, windowStart);
         }
         return outsideWeatherSnapshotRepository.save(
@@ -79,7 +85,7 @@ public class OutsideWeatherSnapshotService {
      * 존재를 확인한 id를 가지고, FeedbackLog 같은 다른 엔티티에 FK로 엮기만 할 때 쓴다.
      */
     public OutsideWeatherSnapshot getReferenceById(Long weatherSnapshotId) {
-        Objects.requireNonNull(weatherSnapshotId, "weatherSnapshotId는 null일 수 없습니다.");
+        Objects.requireNonNull(weatherSnapshotId, WEATHER_SNAPSHOT_ID_NULL_MESSAGE);
         return outsideWeatherSnapshotRepository.getReferenceById(weatherSnapshotId);
     }
 }

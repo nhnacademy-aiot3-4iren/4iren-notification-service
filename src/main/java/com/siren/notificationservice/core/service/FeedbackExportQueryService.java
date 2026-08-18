@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FeedbackExportQueryService {
+    private static final String SINCE_ID_NULL_MESSAGE = "sinceId는 null일 수 없습니다.";
 
     private final FeedbackLogService feedbackLogService;
     private final FeedbackScoreService feedbackScoreService;
@@ -40,7 +41,7 @@ public class FeedbackExportQueryService {
      */
     @Transactional(readOnly = true)
     public List<EnrichedFeedbackLog> fetch(Long sinceId, int limit) {
-        Objects.requireNonNull(sinceId, "sinceId는 null일 수 없습니다.");
+        Objects.requireNonNull(sinceId, SINCE_ID_NULL_MESSAGE);
         List<FeedbackLog> logs = feedbackLogService.getFeedbackLogs(sinceId, limit);
         if (logs.isEmpty()) {
             return List.of();

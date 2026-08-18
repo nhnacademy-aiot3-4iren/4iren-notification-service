@@ -18,6 +18,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,7 +50,7 @@ class AlertHistoryControllerTest {
                 "MEMBER",
                 "SENSOR_ANOMALY",
                 "온도 이상 감지",
-                LocalDateTime.of(2026, 8, 11, 9, 30)
+                        LocalDateTime.of(2026, Month.OCTOBER , 11, 9, 30)
         );
     }
 

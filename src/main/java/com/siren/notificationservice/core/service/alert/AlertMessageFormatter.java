@@ -57,7 +57,7 @@ public class AlertMessageFormatter {
             for(AlertDigestBufferEntry entry : roomEntry) {
                 sb.append("\n ").append(format(entry.event(), null));
             }
-            sb.append("\n\n");
+            sb.append("\n");
         });
         return sb.toString();
     }

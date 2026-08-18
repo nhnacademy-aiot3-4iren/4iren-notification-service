@@ -3,10 +3,7 @@ package com.siren.notificationservice.telegram.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.domain.UserRole;
-import com.siren.notificationservice.core.entity.table.TelegramSubscription;
-import com.siren.notificationservice.core.exception.MissingChatIdException;
-import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
-import com.siren.notificationservice.core.repository.TelegramSubscriptionRepository;
+import com.siren.notificationservice.core.service.basic_service.TelegramSubscriptionService;
 import com.siren.notificationservice.telegram.config.TelegramBotProperties;
 import com.siren.notificationservice.telegram.dto.LinkTokenData;
 import org.junit.jupiter.api.Test;
@@ -14,11 +11,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -30,7 +25,7 @@ class TelegramLinkTokenServiceTest {
 
     private final StringRedisTemplate stringRedisTemplate = mock(StringRedisTemplate.class);
     private final ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
-    private final TelegramSubscriptionRepository telegramSubscriptionRepository = mock(TelegramSubscriptionRepository.class);
+    private final TelegramSubscriptionService telegramSubscriptionService = mock(TelegramSubscriptionService.class);
     private final TelegramBotProperties telegramBotProperties = new TelegramBotProperties(
             new TelegramBotProperties.BotCredentials("admin-token", "admin_bot"),
             new TelegramBotProperties.BotCredentials("member-token", "member_bot"),
@@ -38,7 +33,7 @@ class TelegramLinkTokenServiceTest {
     );
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final TelegramLinkTokenService telegramLinkTokenService =
-            new TelegramLinkTokenService(stringRedisTemplate, telegramSubscriptionRepository, telegramBotProperties, objectMapper);
+            new TelegramLinkTokenService(stringRedisTemplate, telegramSubscriptionService, telegramBotProperties, objectMapper);
 
     @Test
     void getDeepLinkUrlBuildsUrlAndIssuesToken() {
@@ -54,7 +49,7 @@ class TelegramLinkTokenServiceTest {
 
     @Test
     void getRedirectUrlReturnsPlainUrlWhenAlreadyLinked() {
-        when(telegramSubscriptionRepository.existsByUserIdAndBotType(1L, BotType.USER_BOT)).thenReturn(true);
+        when(telegramSubscriptionService.isLinked(1L, BotType.USER_BOT)).thenReturn(true);
 
         String url = telegramLinkTokenService.getRedirectUrl(1L, BotType.USER_BOT);
 
@@ -63,7 +58,7 @@ class TelegramLinkTokenServiceTest {
 
     @Test
     void getRedirectUrlIssuesNewTokenWhenNotLinked() {
-        when(telegramSubscriptionRepository.existsByUserIdAndBotType(1L, BotType.USER_BOT)).thenReturn(false);
+        when(telegramSubscriptionService.isLinked(1L, BotType.USER_BOT)).thenReturn(false);
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
 
         String url = telegramLinkTokenService.getRedirectUrl(1L, BotType.USER_BOT);
@@ -102,37 +97,5 @@ class TelegramLinkTokenServiceTest {
         Optional<LinkTokenData> data = telegramLinkTokenService.consumeToken("abc", BotType.USER_BOT);
 
         assertThat(data).isEmpty();
-    }
-
-    @Test
-    void isLinkedDelegatesToRepository() {
-        when(telegramSubscriptionRepository.existsByUserIdAndBotType(1L, BotType.ADMIN_BOT)).thenReturn(true);
-
-        assertThat(telegramLinkTokenService.isLinked(1L, BotType.ADMIN_BOT)).isTrue();
-    }
-
-    @Test
-    void getUserIdByChatIdReturnsLinkedUserId() {
-        TelegramSubscription subscription = TelegramSubscription.builder()
-                .userId(5L).botType(BotType.USER_BOT).chatId("100").active(true).createdAt(LocalDateTime.now()).build();
-        when(telegramSubscriptionRepository.findByChatIdAndBotType("100", BotType.USER_BOT)).thenReturn(Optional.of(subscription));
-
-        Long userId = telegramLinkTokenService.getUserIdByChatId("100", BotType.USER_BOT);
-
-        assertThat(userId).isEqualTo(5L);
-    }
-
-    @Test
-    void getUserIdByChatIdThrowsWhenChatIdIsNull() {
-        assertThatThrownBy(() -> telegramLinkTokenService.getUserIdByChatId(null, BotType.USER_BOT))
-                .isInstanceOf(MissingChatIdException.class);
-    }
-
-    @Test
-    void getUserIdByChatIdThrowsWhenNotLinked() {
-        when(telegramSubscriptionRepository.findByChatIdAndBotType("100", BotType.USER_BOT)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> telegramLinkTokenService.getUserIdByChatId("100", BotType.USER_BOT))
-                .isInstanceOf(TelegramSubscriptionNotFoundException.class);
     }
 }

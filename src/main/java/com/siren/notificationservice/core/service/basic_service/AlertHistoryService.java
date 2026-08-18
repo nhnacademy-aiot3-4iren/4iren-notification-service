@@ -26,6 +26,10 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class AlertHistoryService {
+    private static final String USER_ID_NULL_MESSAGE = "userId는 null일 수 없습니다.";
+    private static final String ALERT_HISTORY_ID_NULL_MESSAGE = "alertHistoryId는 null일 수 없습니다.";
+    private static final String EVENT_ID_NULL_MESSAGE = "eventId는 null일 수 없습니다.";
+
     private final AlertHistoryRepository alertHistoryRepository;
     private final TelegramSubscriptionRepository telegramSubscriptionRepository;
     private final CoreApiClient coreApiClient;
@@ -35,7 +39,7 @@ public class AlertHistoryService {
      */
     @Transactional(readOnly = true)
     public Page<AlertHistoryResponse> getAlertHistoryByUserId(Long userId, AlertHistorySearchCondition filter, Pageable pageable) {
-        Objects.requireNonNull(userId, "userId는 null일 수 없습니다.");
+        Objects.requireNonNull(userId, USER_ID_NULL_MESSAGE);
         return alertHistoryRepository.search(userId,filter, pageable).map(this::toResponse);
     }
 
@@ -44,8 +48,8 @@ public class AlertHistoryService {
      */
     @Transactional(readOnly = true)
     public AlertHistoryResponse getAlertHistoryById(Long alertHistoryId, Long userId) {
-        Objects.requireNonNull(alertHistoryId, "alertHistoryId는 null일 수 없습니다.");
-        Objects.requireNonNull(userId, "userId는 null일 수 없습니다.");
+        Objects.requireNonNull(alertHistoryId, ALERT_HISTORY_ID_NULL_MESSAGE);
+        Objects.requireNonNull(userId, USER_ID_NULL_MESSAGE);
         return alertHistoryRepository.findByAlertHistoryIdAndUserId(alertHistoryId, userId).map(this::toResponse)
                 .orElseThrow(() -> new NotFoundAlertHistoryException(alertHistoryId));
     }
@@ -57,7 +61,7 @@ public class AlertHistoryService {
      */
     @Transactional(readOnly = true)
     public Set<AlertHistoryKey> findAlreadySentKeys(String eventId){
-        Objects.requireNonNull(eventId, "eventId는 null일 수 없습니다.");
+        Objects.requireNonNull(eventId, EVENT_ID_NULL_MESSAGE);
 
         return alertHistoryRepository.findByEventId(eventId).stream()
                 .map(h -> new AlertHistoryKey(h.getUserId(), h.getBotType()))
@@ -86,6 +90,7 @@ public class AlertHistoryService {
 
     @Transactional(readOnly = true)
     public AlertHistoryFilterOptionsResponse getFilterOptions(Long userId){
+        Objects.requireNonNull(userId, USER_ID_NULL_MESSAGE);
         List<String> botTypes = telegramSubscriptionRepository.findActiveBotTypesByUserId(userId)
                 .stream()
                 .map(Enum::name)

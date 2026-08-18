@@ -5,17 +5,12 @@ import com.siren.notificationservice.telegram.dto.event.FeedbackProcessingEvent;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 class FeedbackProcessingListenerTest {
-
-    private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
     private final FeedbackPersistenceService feedbackPersistenceService = mock(FeedbackPersistenceService.class);
     private final FeedbackProcessingListener feedbackProcessingListener = new FeedbackProcessingListener(feedbackPersistenceService);

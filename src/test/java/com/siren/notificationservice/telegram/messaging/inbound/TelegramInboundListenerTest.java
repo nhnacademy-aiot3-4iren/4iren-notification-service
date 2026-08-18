@@ -4,6 +4,7 @@ import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.domain.UserRole;
 import com.siren.notificationservice.core.exception.MissingChatIdException;
 import com.siren.notificationservice.core.exception.TelegramSubscriptionNotFoundException;
+import com.siren.notificationservice.core.service.basic_service.TelegramSubscriptionService;
 import com.siren.notificationservice.telegram.agent.IntentClassificationAgent;
 import com.siren.notificationservice.telegram.callback.CallbackActionType;
 import com.siren.notificationservice.telegram.callback.handler.CallbackRouteDispatcher;
@@ -31,12 +32,13 @@ import static org.mockito.Mockito.when;
 class TelegramInboundListenerTest {
 
     private final TelegramLinkTokenService telegramLinkTokenService = mock(TelegramLinkTokenService.class);
+    private final TelegramSubscriptionService telegramSubscriptionService = mock(TelegramSubscriptionService.class);
     private final TelegramInboundSubService telegramInboundSubService = mock(TelegramInboundSubService.class);
     private final IntentClassificationAgent intentClassificationAgent = mock(IntentClassificationAgent.class);
     private final TelegramMessageService telegramMessageService = mock(TelegramMessageService.class);
     private final CallbackRouteDispatcher callbackRouteDispatcher = mock(CallbackRouteDispatcher.class);
     private final TelegramInboundListener telegramInboundListener = new TelegramInboundListener(
-            telegramLinkTokenService, telegramInboundSubService, intentClassificationAgent,
+            telegramLinkTokenService, telegramSubscriptionService, telegramInboundSubService, intentClassificationAgent,
             telegramMessageService, callbackRouteDispatcher);
 
     private TelegramInboundEvent textEvent(BotType botType, String text) {
@@ -134,7 +136,7 @@ class TelegramInboundListenerTest {
     @Test
     void handleFreeTextFromAdminBotRedirectsToUserBot() {
         TelegramInboundEvent event = textEvent(BotType.ADMIN_BOT, "몇 도야?");
-        when(telegramLinkTokenService.getUserIdByChatId(event.chatId(), BotType.ADMIN_BOT)).thenReturn(1L);
+        when(telegramSubscriptionService.getUserIdByChatId(event.chatId(), BotType.ADMIN_BOT)).thenReturn(1L);
         when(telegramLinkTokenService.getRedirectUrl(1L, BotType.USER_BOT)).thenReturn("https://t.me/member_bot");
 
         telegramInboundListener.handle(event);
@@ -146,7 +148,7 @@ class TelegramInboundListenerTest {
     @Test
     void handleFreeTextFromUserBotClassifiesIntent() {
         TelegramInboundEvent event = textEvent(BotType.USER_BOT, "너무 더워요");
-        when(telegramLinkTokenService.getUserIdByChatId(event.chatId(), BotType.USER_BOT)).thenReturn(1L);
+        when(telegramSubscriptionService.getUserIdByChatId(event.chatId(), BotType.USER_BOT)).thenReturn(1L);
 
         telegramInboundListener.handle(event);
 
@@ -156,7 +158,7 @@ class TelegramInboundListenerTest {
     @Test
     void handleFreeTextFromUnlinkedUserSendsGuideMessage() {
         TelegramInboundEvent event = textEvent(BotType.USER_BOT, "너무 더워요");
-        when(telegramLinkTokenService.getUserIdByChatId(event.chatId(), BotType.USER_BOT))
+        when(telegramSubscriptionService.getUserIdByChatId(event.chatId(), BotType.USER_BOT))
                 .thenThrow(new TelegramSubscriptionNotFoundException());
 
         telegramInboundListener.handle(event);
@@ -168,7 +170,7 @@ class TelegramInboundListenerTest {
     @Test
     void handleFreeTextWithMissingChatIdOnlyLogsAndSendsNoMessage() {
         TelegramInboundEvent event = textEvent(BotType.USER_BOT, "너무 더워요");
-        when(telegramLinkTokenService.getUserIdByChatId(event.chatId(), BotType.USER_BOT))
+        when(telegramSubscriptionService.getUserIdByChatId(event.chatId(), BotType.USER_BOT))
                 .thenThrow(new MissingChatIdException());
 
         telegramInboundListener.handle(event);
@@ -189,7 +191,7 @@ class TelegramInboundListenerTest {
     @Test
     void handleCallbackQueryDispatchesToMatchingHandler() {
         TelegramInboundEvent event = callbackEvent(BotType.USER_BOT, "FB_ROOM:301호");
-        when(telegramLinkTokenService.getUserIdByChatId(event.chatId(), BotType.USER_BOT)).thenReturn(1L);
+        when(telegramSubscriptionService.getUserIdByChatId(event.chatId(), BotType.USER_BOT)).thenReturn(1L);
 
         telegramInboundListener.handle(event);
 
@@ -200,7 +202,7 @@ class TelegramInboundListenerTest {
     @Test
     void handleCallbackQueryWithUnknownPrefixDoesNotDispatch() {
         TelegramInboundEvent event = callbackEvent(BotType.USER_BOT, "UNKNOWN_PREFIX:301호");
-        when(telegramLinkTokenService.getUserIdByChatId(event.chatId(), BotType.USER_BOT)).thenReturn(1L);
+        when(telegramSubscriptionService.getUserIdByChatId(event.chatId(), BotType.USER_BOT)).thenReturn(1L);
 
         telegramInboundListener.handle(event);
 

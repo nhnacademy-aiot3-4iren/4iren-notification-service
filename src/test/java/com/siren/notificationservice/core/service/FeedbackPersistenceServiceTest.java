@@ -1,6 +1,7 @@
 package com.siren.notificationservice.core.service;
 
 import com.siren.notificationservice.core.client.CoreApiClient;
+import com.siren.notificationservice.core.dto.FeedbackLogCreateRequest;
 import com.siren.notificationservice.core.dto.RoomWeatherRegion;
 import com.siren.notificationservice.core.dto.response.OutsideWeather;
 import com.siren.notificationservice.core.dto.response.RoomEnvironmentReadingResponse;
@@ -16,15 +17,12 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,6 +45,7 @@ class FeedbackPersistenceServiceTest {
     @Test
     void persistUsesExistingSnapshotsWithoutCallingCore() {
         LocalDateTime referenceAt = LocalDateTime.now();
+        FeedbackProcessingEvent event = event();
         RoomEnvironmentSnapshot roomSnapshot = RoomEnvironmentSnapshot.builder()
                 .snapshotId(10L).roomId(7L).windowStart(referenceAt).build();
         OutsideWeatherSnapshot weatherSnapshot = OutsideWeatherSnapshot.builder()
@@ -55,18 +54,19 @@ class FeedbackPersistenceServiceTest {
         when(regionCacheService.find(7L)).thenReturn(Optional.of(new RoomWeatherRegion(60, 127)));
         when(outsideWeatherSnapshotService.findSnapshotId(60, 127, referenceAt.minusMinutes(10).truncatedTo(ChronoUnit.HOURS))).thenReturn(weatherSnapshot);
 
-        feedbackPersistenceService.persist(event(), referenceAt);
+        feedbackPersistenceService.persist(event, referenceAt);
 
         verify(coreApiClient, never()).getRoomSensorsReadings(any(), any());
         verify(coreApiClient, never()).getOutsideWeather(any(), any());
-        verify(feedbackLogService).createFeedbackLogWithScores(
-                eq(1L), eq(7L), eq(roomSnapshot), eq(weatherSnapshot), eq("더워요"),
-                any(), eq(false), isNull(), eq(List.of()));
+        verify(feedbackLogService).createFeedbackLogWithScores(new FeedbackLogCreateRequest(
+                event.userId(), event.roomId(), roomSnapshot, weatherSnapshot, event.rawText(), event.receivedAt(),
+                event.isDelayed(), event.experiencedAt(), event.sensorScores()));
     }
 
     @Test
     void persistCreatesRoomSnapshotFromCoreWhenNoneCachedLocally() {
         LocalDateTime referenceAt = LocalDateTime.now();
+        FeedbackProcessingEvent event = event();
         when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(null);
         RoomEnvironmentReadingResponse readingResponse = new RoomEnvironmentReadingResponse(7L, null, List.of());
         when(coreApiClient.getRoomSensorsReadings(7L, referenceAt)).thenReturn(readingResponse);
@@ -76,35 +76,38 @@ class FeedbackPersistenceServiceTest {
         when(regionCacheService.find(7L)).thenReturn(Optional.empty());
         when(coreApiClient.getOutsideWeather(any(), any())).thenThrow(new CoreApiUnavailableException(7L, "roomId"));
 
-        feedbackPersistenceService.persist(event(), referenceAt);
+        feedbackPersistenceService.persist(event, referenceAt);
 
-        verify(feedbackLogService).createFeedbackLogWithScores(
-                eq(1L), eq(7L), eq(createdSnapshot), isNull(), eq("더워요"),
-                any(), eq(false), isNull(), eq(List.of()));
+        verify(feedbackLogService).createFeedbackLogWithScores(new FeedbackLogCreateRequest(
+                event.userId(), event.roomId(), createdSnapshot, null, event.rawText(), event.receivedAt(),
+                event.isDelayed(), event.experiencedAt(), event.sensorScores()));
     }
 
     @Test
     void persistKeepsGoingWithNullSnapshotWhenCoreFailsForRoomReadings() {
         LocalDateTime referenceAt = LocalDateTime.now();
+        FeedbackProcessingEvent event = event();
         when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(null);
         when(coreApiClient.getRoomSensorsReadings(7L, referenceAt))
                 .thenThrow(new CoreApiUnavailableException(7L, "roomId"));
         when(regionCacheService.find(7L)).thenReturn(Optional.empty());
         when(coreApiClient.getOutsideWeather(any(), any())).thenThrow(new CoreApiUnavailableException(7L, "roomId"));
 
-        feedbackPersistenceService.persist(event(), referenceAt);
+        feedbackPersistenceService.persist(event, referenceAt);
 
         verify(roomEnvironmentSnapshotService, never()).createWithReadings(any(), any(), any());
-        verify(feedbackLogService).createFeedbackLogWithScores(
-                eq(1L), eq(7L), isNull(), isNull(), eq("더워요"),
-                any(), eq(false), isNull(), eq(List.of()));
+        verify(feedbackLogService).createFeedbackLogWithScores(new FeedbackLogCreateRequest(
+                event.userId(), event.roomId(), null, null, event.rawText(), event.receivedAt(),
+                event.isDelayed(), event.experiencedAt(), event.sensorScores()));
     }
 
     @Test
     void persistCreatesWeatherSnapshotAndCachesRegionWhenNotCachedYet() {
         LocalDateTime referenceAt = LocalDateTime.now();
-        when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(
-                RoomEnvironmentSnapshot.builder().snapshotId(10L).roomId(7L).windowStart(referenceAt).build());
+        FeedbackProcessingEvent event = event();
+        RoomEnvironmentSnapshot roomSnapshot = RoomEnvironmentSnapshot.builder()
+                .snapshotId(10L).roomId(7L).windowStart(referenceAt).build();
+        when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(roomSnapshot);
         when(regionCacheService.find(7L)).thenReturn(Optional.empty());
         OutsideWeather weather = new OutsideWeather("2026-07-24 13:00", "33.7℃", "69%", 60, 127);
         when(coreApiClient.getOutsideWeather(7L, referenceAt)).thenReturn(weather);
@@ -118,28 +121,30 @@ class FeedbackPersistenceServiceTest {
                 60, 127, windowStart, BigDecimal.valueOf(33.7), BigDecimal.valueOf(69)))
                 .thenReturn(createdWeatherSnapshot);
 
-        feedbackPersistenceService.persist(event(), referenceAt);
+        feedbackPersistenceService.persist(event, referenceAt);
 
         verify(regionCacheService).save(7L, new RoomWeatherRegion(60, 127));
-        verify(feedbackLogService).createFeedbackLogWithScores(
-                eq(1L), eq(7L), any(), eq(createdWeatherSnapshot), eq("더워요"),
-                any(), eq(false), isNull(), eq(List.of()));
+        verify(feedbackLogService).createFeedbackLogWithScores(new FeedbackLogCreateRequest(
+                event.userId(), event.roomId(), roomSnapshot, createdWeatherSnapshot, event.rawText(), event.receivedAt(),
+                event.isDelayed(), event.experiencedAt(), event.sensorScores()));
     }
 
     @Test
     void persistSkipsWeatherSnapshotWhenBaseDateTimeIsUnparseable() {
         LocalDateTime referenceAt = LocalDateTime.now();
-        when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(
-                RoomEnvironmentSnapshot.builder().snapshotId(10L).roomId(7L).windowStart(referenceAt).build());
+        FeedbackProcessingEvent event = event();
+        RoomEnvironmentSnapshot roomSnapshot = RoomEnvironmentSnapshot.builder()
+                .snapshotId(10L).roomId(7L).windowStart(referenceAt).build();
+        when(roomEnvironmentSnapshotService.findSnapshotId(7L, referenceAt)).thenReturn(roomSnapshot);
         when(regionCacheService.find(7L)).thenReturn(Optional.empty());
         OutsideWeather weather = new OutsideWeather("이상한형식", "33.7℃", "69%", 60, 127);
         when(coreApiClient.getOutsideWeather(7L, referenceAt)).thenReturn(weather);
 
-        feedbackPersistenceService.persist(event(), referenceAt);
+        feedbackPersistenceService.persist(event, referenceAt);
 
         verify(outsideWeatherSnapshotService, never()).createOutsideWeatherSnapshot(any(), any(), any(), any(), any());
-        verify(feedbackLogService).createFeedbackLogWithScores(
-                eq(1L), eq(7L), any(), isNull(), eq("더워요"),
-                any(), eq(false), isNull(), eq(List.of()));
+        verify(feedbackLogService).createFeedbackLogWithScores(new FeedbackLogCreateRequest(
+                event.userId(), event.roomId(), roomSnapshot, null, event.rawText(), event.receivedAt(),
+                event.isDelayed(), event.experiencedAt(), event.sensorScores()));
     }
 }

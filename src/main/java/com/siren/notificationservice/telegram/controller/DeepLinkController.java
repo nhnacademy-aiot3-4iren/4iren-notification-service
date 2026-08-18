@@ -4,6 +4,7 @@ import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.domain.UserRole;
 import com.siren.notificationservice.core.security.RequireRole;
 import com.siren.notificationservice.core.security.Role;
+import com.siren.notificationservice.core.service.basic_service.TelegramSubscriptionService;
 import com.siren.notificationservice.telegram.controller.webhook.doc.DeepLinkControllerDoc;
 import com.siren.notificationservice.telegram.dto.LinkTokenData;
 import com.siren.notificationservice.telegram.dto.response.LinkStatusResponse;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class DeepLinkController implements DeepLinkControllerDoc {
     private final TelegramLinkTokenService telegramLinkTokenService;
+    private final TelegramSubscriptionService telegramSubscriptionService;
 
 
     /**
@@ -55,7 +57,7 @@ public class DeepLinkController implements DeepLinkControllerDoc {
     @GetMapping("/telegram/admin/link-status")
     public ResponseEntity<LinkStatusResponse> getAdminLinkStatus(
             @RequestHeader("X-USER-ID") Long userId) {
-        boolean linked = telegramLinkTokenService.isLinked(userId, BotType.ADMIN_BOT);
+        boolean linked = telegramSubscriptionService.isLinked(userId, BotType.ADMIN_BOT);
         return ResponseEntity.ok().body(new LinkStatusResponse(linked));
     }
 
@@ -67,7 +69,7 @@ public class DeepLinkController implements DeepLinkControllerDoc {
     @GetMapping("/telegram/member/link-status")
     public ResponseEntity<LinkStatusResponse> getMemberLinkStatus(
             @RequestHeader("X-USER-ID") Long userId) {
-        boolean linked = telegramLinkTokenService.isLinked(userId, BotType.USER_BOT);
+        boolean linked = telegramSubscriptionService.isLinked(userId, BotType.USER_BOT);
         return ResponseEntity.ok().body(new LinkStatusResponse(linked));
     }
 }

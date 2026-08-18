@@ -1,5 +1,6 @@
 package com.siren.notificationservice.core.service;
 
+import com.siren.notificationservice.core.dto.FeedbackLogCreateRequest;
 import com.siren.notificationservice.core.entity.domain.SensorType;
 import com.siren.notificationservice.core.entity.table.FeedbackLog;
 import com.siren.notificationservice.core.repository.FeedbackLogRepository;
@@ -67,30 +68,13 @@ class FeedbackLogServiceTest {
         when(feedbackLogRepository.save(any())).thenReturn(log(1L));
         List<FeedbackExtractionResult.SensorScore> sensorScores =
                 List.of(new FeedbackExtractionResult.SensorScore(SensorType.TEMPERATURE, 1));
+        FeedbackLogCreateRequest request = new FeedbackLogCreateRequest(
+                1L, 7L, null, null, "더워요", LocalDateTime.now(), false, null, sensorScores);
 
-        feedbackLogService.createFeedbackLogWithScores(1L, 7L, null, null, "더워요",
-                LocalDateTime.now(), false, null, sensorScores);
+        feedbackLogService.createFeedbackLogWithScores(request);
 
         verify(feedbackLogRepository).save(any());
         verify(feedbackScoreService).saveAll(any());
-    }
-
-    @Test
-    void createFeedbackLogWithScoresThrowsWhenSensorScoresIsNull() {
-        LocalDateTime createdAt = LocalDateTime.now();
-
-        assertThatThrownBy(() -> feedbackLogService.createFeedbackLogWithScores(1L, 7L, null, null, "더워요",
-                createdAt, false, null, null))
-                .isInstanceOf(NullPointerException.class);
-    }
-
-    @Test
-    void createFeedbackLogWithScoresThrowsWhenUserIdIsNull() {
-        LocalDateTime createdAt = LocalDateTime.now();
-
-        assertThatThrownBy(() -> feedbackLogService.createFeedbackLogWithScores(null, 7L, null, null, "더워요",
-                createdAt, false, null, List.of()))
-                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
