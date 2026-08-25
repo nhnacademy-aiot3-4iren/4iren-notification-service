@@ -7,10 +7,10 @@ public record RecommendationResponse(
         Long userId,
         Long roomId,
         String message,
-        String answer,
-        List<String> options,
+        Answer answer,
         LocalDateTime requestedAt,
         LocalDateTime receivedAt,
         LocalDateTime answeredAt
 ) {
+    public record Answer(String answer, List<String> options) {}
 }

@@ -1,34 +1,18 @@
 package com.siren.notificationservice.core.dto;
 
-import com.siren.notificationservice.core.exception.ErrorCode;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
-import java.time.ZonedDateTime;
-
+/**
+ * 공통 에러 응답. 예외 타입별 코드 체계 없이 상태/메시지/시각만 담는다.
+ */
 public record ErrorResponse(
-        String code,
         String message,
         int status,
-        ZonedDateTime timestamp
+        LocalDateTime timestamp
 ) {
 
-    /**
-     * ErrorCode의 기본 메시지로 응답을 만든다.
-     *
-     * @param errorCode 에러 코드
-     * @return 에러 응답
-     */
-    public static ErrorResponse of(ErrorCode errorCode) {
-        return new ErrorResponse(errorCode.getCode(), errorCode.getMessage(), errorCode.getStatus().value(), ZonedDateTime.now());
-    }
-
-    /**
-     * 메시지를 상세 컨텍스트로 덮어써서 응답을 만든다.
-     *
-     * @param errorCode 에러 코드
-     * @param message   상세 메시지
-     * @return 에러 응답
-     */
-    public static ErrorResponse of(ErrorCode errorCode, String message) {
-        return new ErrorResponse(errorCode.getCode(), message, errorCode.getStatus().value(), ZonedDateTime.now());
+    public static ErrorResponse of(int status, String message) {
+        return new ErrorResponse(message, status, LocalDateTime.now(ZoneId.of("Asia/Seoul")));
     }
 }

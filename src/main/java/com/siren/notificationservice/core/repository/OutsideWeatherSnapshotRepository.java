@@ -2,19 +2,30 @@ package com.siren.notificationservice.core.repository;
 
 import com.siren.notificationservice.core.entity.table.OutsideWeatherSnapshot;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface OutsideWeatherSnapshotRepository extends JpaRepository<OutsideWeatherSnapshot, Long> {
 
     /**
-     * 특정 시간대(Core가 알려준 실제 날씨 데이터 시각)의 외부 날씨 스냅샷을 조회한다
-     * (window_start 유니크 기준 단건). room_id가 없다 — 이 배포가 서비스하는 위치는
-     * 하나뿐이라 강의실 구분 없이 시간대로만 재사용한다.
-     *
-     * @param windowStart 날씨 데이터 시각
-     * @return 스냅샷, 없으면 empty
+     * 특정 지역(nx, ny)·특정 시간대의 외부 날씨 스냅샷을 조회한다.
      */
-    Optional<OutsideWeatherSnapshot> findByWindowStart(ZonedDateTime windowStart);
+    Optional<OutsideWeatherSnapshot> findByNxAndNyAndWindowStart(Integer nx, Integer ny, LocalDateTime windowStart);
+
+    @Query(value = "SELECT w.weather_snapshot_id FROM outside_weather_snapshot w " +
+            "LEFT JOIN feedback_log fl ON fl.outside_weather_snapshot_id = w.weather_snapshot_id " +
+            "WHERE fl.outside_weather_snapshot_id IS NULL LIMIT :batchSize", nativeQuery = true)
+    List<Long> findOrphanWeatherSnapshotIds(@Param("batchSize") int batchSize);
+
+    // 조회~삭제 사이 레이스 대비: 삭제 시점에 참조 없는 것만 지운다(0건 삭제는 정상).
+    @Modifying(clearAutomatically = true)
+    @Query(value = "DELETE FROM outside_weather_snapshot WHERE weather_snapshot_id IN (:ids) "
+            + "AND weather_snapshot_id NOT IN (SELECT fl.outside_weather_snapshot_id FROM feedback_log fl WHERE fl.outside_weather_snapshot_id IS NOT NULL)",
+            nativeQuery = true)
+    void deleteWeatherSnapshotsByIds(@Param("ids") List<Long> ids);
 }

@@ -1,49 +1,57 @@
 package com.siren.notificationservice.core.config;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence;
+import com.siren.notificationservice.core.dlq.service.DlqRecoverer;
+import org.springframework.amqp.core.*;
+
+import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.support.converter.Jackson2JavaTypeMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
 
-    @Value("${rabbitmq.exchange.telegram-events}")
-    private String telegramEventsExchangeName;
+    @Value("${rabbitmq.exchange.telegram-events}") private String telegramEventsExchangeName;
+    @Value("${rabbitmq.queue.telegram-inbound}") private String telegramInboundQueueName;
+    @Value("${rabbitmq.routing-key.telegram-inbound}") private String telegramInboundRoutingKey;
+    @Value("${rabbitmq.exchange.notification-internal}") private String notificationInternalExchangeName;
+    @Value("${rabbitmq.queue.feedback-processing}") private String feedbackProcessingQueueName;
+    @Value("${rabbitmq.routing-key.feedback-processing}") private String feedbackProcessingRoutingKey;
+    @Value("${rabbitmq.exchange.alert-events}") private String alertEventsExchangeName;
+    @Value("${rabbitmq.queue.alert-urgent}") private String alertUrgentQueueName;
+    @Value("${rabbitmq.routing-key.alert-urgent}") private String alertUrgentRoutingKey;
+    @Value("${rabbitmq.queue.alert-digest}") private String alertDigestQueueName;
+    @Value("${rabbitmq.routing-key.alert-digest}") private String alertDigestRoutingKey;
 
-    @Value("${rabbitmq.queue.telegram-inbound}")
-    private String telegramInboundQueueName;
+    @Value("${rabbitmq.exchange.alert-digest-delay}")   private String alertDigestDelayExchangeName;
+    @Value("${rabbitmq.queue.alert-digest-delay}")      private String alertDigestDelayQueueName;
+    @Value("${rabbitmq.routing-key.alert-digest-delay}") private String alertDigestDelayRoutingKey;
+    @Value("${rabbitmq.exchange.alert-digest-dlx}")     private String alertDigestDlxExchangeName;
+    @Value("${rabbitmq.queue.alert-digest-flush}")      private String alertDigestFlushQueueName;
+    @Value("${rabbitmq.routing-key.alert-digest-flush}") private String alertDigestFlushRoutingKey;
+    @Value("${rabbitmq.alert-digest.ttl-ms}")           private long alertDigestTtlMs;
 
-    @Value("${rabbitmq.routing-key.telegram-inbound}")
-    private String telegramInboundRoutingKey;
+    @Value("${rabbitmq.exchange.user-role}") private String userRoleExchangeName;
+    @Value("${rabbitmq.queue.user-role}") private String userRoleQueueName;
+    @Value("${rabbitmq.routing-key.user-role}") private String userRoleRoutingKey;
 
-    @Value("${rabbitmq.exchange.notification-internal}")
-    private String notificationInternalExchangeName;
-
-    @Value("${rabbitmq.queue.feedback-processing}")
-    private String feedbackProcessingQueueName;
-
-    @Value("${rabbitmq.routing-key.feedback-processing}")
-    private String feedbackProcessingRoutingKey;
+    @Value("${rabbitmq.exchange.dlx}") private String dlxExchangeName;
+    @Value("${rabbitmq.queue.dlq}") private String dlqQueueName;
+    @Value("${rabbitmq.routing-key.dlq}") private String dlqRoutingKey;
 
     /**
-     * Account API 등 외부 서비스가 발행하는 JSON 이벤트를 로컬 DTO로 역직렬화한다.
-     * 기본값(__TypeId__ 헤더 기반)으로 두면 발행 측 클래스의 FQCN을 그대로 찾으려 해서
-     * 우리 클래스패스에 없는 패키지라 역직렬화가 실패한다 — 리스너 메서드 파라미터 타입으로
-     * 추론하도록(INFERRED) 바꿔서 발행 측 클래스명과 무관하게 동작하게 한다.
-     *
      * @return JSON - DTO 변환기 (RabbitTemplate과 리스너 컨테이너에 자동 적용됨)
      */
     @Bean
     public MessageConverter jsonMessageConverter() {
         Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
-        converter.setTypePrecedence(TypePrecedence.INFERRED);
+        converter.setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence.INFERRED);
         return converter;
     }
 
@@ -53,8 +61,8 @@ public class RabbitMQConfig {
      * @return telegram-events 익스체인지
      */
     @Bean
-    public TopicExchange telegramEventsExchange() {
-        return new TopicExchange(telegramEventsExchangeName);
+    public DirectExchange telegramEventsExchange() {
+        return new DirectExchange(telegramEventsExchangeName);
     }
 
     /**
@@ -87,24 +95,142 @@ public class RabbitMQConfig {
 
     /**
      * telegramInboundQueue를 telegramEventsExchange의 telegram inbound 라우팅 키에 바인딩한다.
-     * @param telegramInboundQueue 텔레그램 인바운드 큐
-     * @param telegramEventsExchange 텔레그램 인바운드 익스체인지
-     * @return 큐-익스체인지 바인딩
      */
     @Bean
-    public Binding telegramInboundBinding(Queue telegramInboundQueue, TopicExchange telegramEventsExchange) {
+    public Binding telegramInboundBinding(Queue telegramInboundQueue, DirectExchange telegramEventsExchange) {
         return BindingBuilder.bind(telegramInboundQueue).to(telegramEventsExchange).with(telegramInboundRoutingKey);
     }
 
     /**
      * feedbackProcessingQueue를 notificationInternalExchange()의 feedbackProcessingRoutingKey에 바인딩한다.
-     * @param feedbackProcessingQueue 피드백 처리 큐
-     * @param notificationInternalExchange notification 내부 익스체인지
-     * @return 큐-익스체인지 바인딩
      */
     @Bean
     public Binding feedbackProcessingBinding(Queue feedbackProcessingQueue, TopicExchange notificationInternalExchange) {
         return BindingBuilder.bind(feedbackProcessingQueue).to(notificationInternalExchange).with(feedbackProcessingRoutingKey);
     }
 
+    /**
+     * Processing/RuleEngine이 발행하는 AlertEvent용 익스체인지
+     */
+    @Bean
+    public TopicExchange alertEventsExchange() {
+        return new TopicExchange(alertEventsExchangeName);
+    }
+
+    /**
+     * 긴급 알림(COMFORT_LIMIT_EXCEEDED/SENSOR_ANOMALY) 전용 큐.
+     */
+    @Bean
+    public Queue alertUrgentQueue() {
+        return new Queue(alertUrgentQueueName, true);
+    }
+
+    /**
+     * 비긴급 알림(VENTILATION_RECOMMEND) 전용 큐.
+     */
+    @Bean
+    public Queue alertDigestQueue() {
+        return new Queue(alertDigestQueueName, true);
+    }
+
+    /**
+     * alertUrgentQueue를 라우팅 키(와일드카드)에 바인딩
+     */
+    @Bean
+    public Binding alertUrgentBinding(Queue alertUrgentQueue, TopicExchange alertEventsExchange) {
+        return BindingBuilder.bind(alertUrgentQueue).to(alertEventsExchange).with(alertUrgentRoutingKey);
+    }
+
+    /**
+     * alertDigestQueue를 라우팅 키(와일드카드)에 바인딩
+     */
+    @Bean
+    public Binding alertDigestBinding(Queue alertDigestQueue, TopicExchange alertEventsExchange) {
+        return BindingBuilder.bind(alertDigestQueue).to(alertEventsExchange).with(alertDigestRoutingKey);
+    }
+
+    //이하 디바운스 버퍼 (알림발송로직의 비긴급일때 인스턴스 갯수에 따른 중복로직을 방어하기위해..)
+    /** 발행처 -> 대기 큐로 넣는 익스체인지 */
+    @Bean
+    public DirectExchange alertDigestDelayExchange() {
+        return new DirectExchange(alertDigestDelayExchangeName);
+    }
+
+    /** dead-letter 익스체인지 (TTL 만료된 메시지가 여기로 이동) */
+    @Bean
+    public DirectExchange alertDigestDlxExchange() {
+        return new DirectExchange(alertDigestDlxExchangeName);
+    }
+
+    /**
+     * 대기 큐 - 컨슈머 없음. 큐 레벨 TTL(x-message-ttl)로 N분 뒤 만료되면 (지금은 3분으로 잡아놈 프로퍼티 확인)
+     * x-dead-letter-exchange(DLX)로 이동한다. 이 만료 -> 이동이 타이머 역할.
+     */
+    @Bean
+    public Queue alertDigestDelayQueue() {
+        return QueueBuilder.durable(alertDigestDelayQueueName)
+                .ttl((int) alertDigestTtlMs)
+                .deadLetterExchange(alertDigestDlxExchangeName) // 대기큐랑 dlx 익스체인지랑 연결
+                .deadLetterRoutingKey(alertDigestFlushRoutingKey) // 프로듀서 처럼 익스체인지랑 라우팅 키로만 연결하면 큐 찾아감
+                .build();
+    }
+
+    /** flush 큐 - 컨슈머 있음(flush 리스너) */
+    @Bean
+    public Queue alertDigestFlushQueue() {
+        return new Queue(alertDigestFlushQueueName, true);
+    }
+
+    /** 발행처 -> 대기 큐 바인딩 */
+    @Bean
+    public Binding alertDigestDelayBinding(Queue alertDigestDelayQueue, DirectExchange alertDigestDelayExchange) {
+        return BindingBuilder.bind(alertDigestDelayQueue).to(alertDigestDelayExchange).with(alertDigestDelayRoutingKey);
+    }
+
+    /** DLX -> flush 큐 바인딩 (만료된 메시지가 여기로 도착) */
+    @Bean
+    public Binding alertDigestFlushBinding(Queue alertDigestFlushQueue, DirectExchange alertDigestDlxExchange) {
+        return BindingBuilder.bind(alertDigestFlushQueue).to(alertDigestDlxExchange).with(alertDigestFlushRoutingKey);
+    }
+
+    // Account
+    @Bean
+    public DirectExchange accountRoleExchange() { return new DirectExchange(userRoleExchangeName);}
+
+    @Bean
+    public Queue accountRoleQueue() {return new Queue(userRoleQueueName, true);}
+
+    @Bean
+    public Binding accountRoleBinding(Queue accountRoleQueue, DirectExchange accountRoleExchange) {
+        return BindingBuilder.bind(accountRoleQueue).to(accountRoleExchange).with(userRoleRoutingKey);
+    }
+
+
+    // DLQ
+    @Bean
+    public DirectExchange dlxExchange() {return new DirectExchange(dlxExchangeName);}
+
+    @Bean
+    public Queue dlq() {return new Queue(dlqQueueName, true);}
+
+    @Bean
+    public Binding dlqBinding(Queue dlq, DirectExchange dlxExchange) {
+        return BindingBuilder.bind(dlq).to(dlxExchange).with(dlqRoutingKey);
+    }
+
+    // urgent 전용 팩토리 (나머지는 프로퍼티를 따라가게)
+    @Bean
+    public SimpleRabbitListenerContainerFactory urgentContainerFactory(
+            SimpleRabbitListenerContainerFactoryConfigurer configurer,
+            ConnectionFactory connectionFactory, DlqRecoverer dlqRecoverer) {
+
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+
+        configurer.configure(factory, connectionFactory);
+
+        factory.setDefaultRequeueRejected(false);
+        factory.setAdviceChain(RetryInterceptorBuilder.stateless()
+                .maxAttempts(2).backOffOptions(500, 2.0, 2000).recoverer(dlqRecoverer).build());
+        return factory;
+    }
 }

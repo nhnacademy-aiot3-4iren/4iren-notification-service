@@ -1,0 +1,56 @@
+### 알림 발송(Phase 7) 검증용 — AlertEvent를 RabbitMQ에 직접 발행
+### (로컬엔 Processing/RuleEngine이 없어 우리가 alert.events 익스체인지로 직접 publish)
+### - RabbitMQ 관리 API: http://localhost:15672 (guest:guest → Basic Z3Vlc3Q6Z3Vlc3Q=)
+### - 컨버터가 INFERRED라 __TypeId__ 불필요, content_type=application/json만 필요
+### - roomId 7/9 = 유저1 구독 방(양쪽 봇 연동) → 유저1 텔레그램으로 발송돼야 함
+### - eventId는 멱등 키: 같은 eventId 재발행은 재발송 안 됨(이미 보낸 키). 재테스트 시 값 바꿀 것
+### 검증: (1) 텔레그램에 알림 도착  (2) SELECT * FROM alert_history WHERE event_id LIKE 'test-%'
+
+### [7-긴급] CO2 위험 임계치 초과 (COMFORT_LIMIT_EXCEEDED) → 즉시 발송 + alert_history
+POST http://localhost:15672/api/exchanges/%2F/alert.events/publish
+Authorization: Basic Z3Vlc3Q6Z3Vlc3Q=
+Content-Type: application/json
+
+{
+  "properties": { "content_type": "application/json" },
+  "routing_key": "alert.urgent.co2",
+  "payload_encoding": "string",
+  "payload": "{\"roomId\":7,\"alertType\":\"COMFORT_LIMIT_EXCEEDED\",\"alertTitle\":\"CO2 위험 임계치 초과\",\"deviceEui\":\"TEST-EUI-001\",\"deviceName\":\"테스트 센서\",\"point\":\"천장\",\"nodeResults\":[{\"nodeType\":\"SENSOR\",\"metricType\":\"CO2\",\"operator\":\"GTE\",\"unit\":\"ppm\",\"threshold\":1500.0,\"value\":1820.0}],\"detectedAt\":\"2026-08-14T07:30:00Z\",\"eventId\":\"test-urgent-001\"}"
+}
+
+### [7-긴급] 센서 이상 (SENSOR_ANOMALY, room 9) → 즉시 발송
+POST http://localhost:15672/api/exchanges/%2F/alert.events/publish
+Authorization: Basic Z3Vlc3Q6Z3Vlc3Q=
+Content-Type: application/json
+
+{
+  "properties": { "content_type": "application/json" },
+  "routing_key": "alert.urgent.sensor",
+  "payload_encoding": "string",
+  "payload": "{\"roomId\":9,\"alertType\":\"SENSOR_ANOMALY\",\"alertTitle\":\"센서 응답 없음\",\"deviceEui\":\"TEST-EUI-002\",\"deviceName\":\"온습도 센서\",\"point\":\"벽면\",\"nodeResults\":[],\"detectedAt\":\"2026-08-14T08:00:00Z\",\"eventId\":\"test-urgent-002\"}"
+}
+
+### [8-비긴급/디바운스] 환기 권장 #1 (VENTILATION_RECOMMEND, room 7) → 버퍼에 쌓임
+### ※ 즉시 안 옴. TTL(현재 config 180000ms=3분) 후 flush되며 유저 단위로 묶여서 발송
+POST http://localhost:15672/api/exchanges/%2F/alert.events/publish
+Authorization: Basic Z3Vlc3Q6Z3Vlc3Q=
+Content-Type: application/json
+
+{
+  "properties": { "content_type": "application/json" },
+  "routing_key": "alert.digest.vent",
+  "payload_encoding": "string",
+  "payload": "{\"roomId\":7,\"alertType\":\"VENTILATION_RECOMMEND\",\"alertTitle\":\"환기를 권장드려요\",\"deviceEui\":\"TEST-EUI-003\",\"deviceName\":\"CO2 센서\",\"point\":\"천장\",\"nodeResults\":[{\"nodeType\":\"SENSOR\",\"metricType\":\"CO2\",\"operator\":\"GTE\",\"unit\":\"ppm\",\"threshold\":1000.0,\"value\":1120.0}],\"detectedAt\":\"2026-08-14T09:00:00Z\",\"eventId\":\"test-digest-001\"}"
+}
+
+### [8-비긴급/디바운스] 환기 권장 #2 (room 9) → 위 #1과 같은 유저라 flush 때 하나로 묶여야 함
+POST http://localhost:15672/api/exchanges/%2F/alert.events/publish
+Authorization: Basic Z3Vlc3Q6Z3Vlc3Q=
+Content-Type: application/json
+
+{
+  "properties": { "content_type": "application/json" },
+  "routing_key": "alert.digest.vent",
+  "payload_encoding": "string",
+  "payload": "{\"roomId\":9,\"alertType\":\"VENTILATION_RECOMMEND\",\"alertTitle\":\"환기를 권장드려요\",\"deviceEui\":\"TEST-EUI-004\",\"deviceName\":\"CO2 센서\",\"point\":\"천장\",\"nodeResults\":[{\"nodeType\":\"SENSOR\",\"metricType\":\"CO2\",\"operator\":\"GTE\",\"unit\":\"ppm\",\"threshold\":1000.0,\"value\":1080.0}],\"detectedAt\":\"2026-08-14T09:05:00Z\",\"eventId\":\"test-digest-002\"}"
+}

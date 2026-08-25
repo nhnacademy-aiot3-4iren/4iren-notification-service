@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -106,22 +107,30 @@ public class TelegramMessageService {
      * 피드백이 접수됐을 때 소프트 확언을 보낸다. 실제 조치를 확언하는 게 아니라
      * "의견을 받았다"는 것만 알린다 — 온도를 바꿔주겠다는 식의 약속이 아님.
      */
-    public void sendFeedbackAcknowledgeMessage(String chatId, BotType botType) {
-        String text = "의견을 반영하여 더 나은 강의실 환경을 만들겠습니다.";
+    public String sendFeedbackAcknowledgeMessage(String chatId, BotType botType, String roomName) {
+        String text = (roomName == null || roomName.isBlank())
+                ? "의견을 반영하여 더 나은 강의실 환경을 만들겠습니다."
+                : "'" + roomName + "' 강의실 의견으로 접수했어요. 반영하여 더 나은 환경을 만들겠습니다.";
         sendMessage(chatId, botType, text, "피드백 접수 확언");
+        return text;
     }
 
     /**
      * 피드백 처리 큐 publish 실패 등, 내부 처리 단계에서 문제가 생겼을 때 안내한다.
-     * Core API 실패({@link #sendCoreApiUnavailableMessage})와 구분되는 별도 원인이라 전용 메서드로 분리.
+     * Core API 실패(sendCoreApiUnavailableMessage)와 구분되는 별도 원인이라 전용 메서드로 분리.
      */
     public void sendFeedbackProcessingFailedMessage(String chatId, BotType botType) {
         String text = "지금은 의견을 접수하기 어려워요, 잠시 후 다시 시도해주세요.";
         sendMessage(chatId, botType, text, "피드백 처리 실패 안내");
     }
 
+    /** 이미 처리(중복 탭)됐거나 만료된 강의실 선택 — 재제출 유도하지 않는 중립 안내. */
+    public void sendFeedbackAlreadyHandledMessage(String chatId, BotType botType) {
+        sendMessage(chatId, botType, "이미 접수됐거나 시간이 지난 요청이에요", "피드백 중복/만료 안내");
+    }
+
     /**
-     * 인라인 키보드 탭에 응답한다 — 안 부르면 텔레그램 클라이언트에 로딩 스피너가 계속 돈다.
+     * 인라인 키보드 탭에 응답한다 : 안 부르면 텔레그램 클라이언트에 로딩 스피너가 계속 돈다.
      * 콜백 처리 성공/실패와 무관하게 항상 먼저(또는 처리 직후) 호출해야 한다.
      */
     public void answerCallback(String callbackQueryId, BotType botType) {
@@ -170,6 +179,19 @@ public class TelegramMessageService {
         executeSendMessage(botType, message, chatId, "인라인 키보드");
     }
 
+    public void removeInlineKeyboard(String chatId, Integer messageId, BotType botType) {
+        EditMessageReplyMarkup edit = EditMessageReplyMarkup.builder()
+                .chatId(chatId)
+                .messageId(messageId)
+                .replyMarkup(null) // null = 키보드 삭제
+                .build();
+
+        try{
+            resolveTelegramSender(botType).execute(edit);
+        }catch (TelegramApiException e) {
+            log.warn("인라인 키보드 제거 실패 (botType={}, chatId={}, messageId={})", botType, chatId, messageId, e);
+        }
+    }
     /**
      * {sendMessage}/{sendInlineKeyboardMessage}가 공유하는 발송 실행부.
      * 발송 실패는 예외를 삼키고 로그만 남긴다 (재시도 없음).

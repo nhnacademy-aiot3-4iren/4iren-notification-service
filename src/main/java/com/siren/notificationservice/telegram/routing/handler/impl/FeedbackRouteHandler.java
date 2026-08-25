@@ -1,11 +1,13 @@
 package com.siren.notificationservice.telegram.routing.handler.impl;
 
 import com.siren.notificationservice.core.client.CoreApiClient;
+import com.siren.notificationservice.core.dto.ConversationContext;
 import com.siren.notificationservice.core.dto.FeedbackExtractionCache;
-import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
+import com.siren.notificationservice.core.dto.response.RoomSubResponse;
 import com.siren.notificationservice.core.exception.CoreApiUnavailableException;
-import com.siren.notificationservice.core.service.cache.FeedbackExtractionCacheService;
 import com.siren.notificationservice.core.service.FeedbackRoomResolver;
+import com.siren.notificationservice.core.service.cache.FeedbackExtractionCacheService;
+import com.siren.notificationservice.core.service.cache.LlmConversationContextService;
 import com.siren.notificationservice.telegram.agent.FeedbackExtractionAgent;
 import com.siren.notificationservice.telegram.dto.event.FeedbackProcessingEvent;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
@@ -19,8 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,6 +35,7 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
     private final FeedbackExtractionAgent feedbackExtractionAgent;
     private final FeedbackRoomResolver feedbackRoomResolver;
     private final FeedbackProcessingEventPublisher feedbackProcessingEventPublisher;
+    private final LlmConversationContextService llmConversationContextService;
 
 
     @Override
@@ -46,7 +48,7 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
         String rawText = event.question();
 
         // 1. 구독 강의실 목록 조회 (Core API 실패 시 안내하고 종료)
-        List<UserRoomSubResponse.RoomSubResponse> subscribedRooms;
+        List<RoomSubResponse> subscribedRooms;
         try {
             subscribedRooms = coreApiClient.getRoomSubscriptions(userId).roomSubInfo();
         } catch (CoreApiUnavailableException e) {
@@ -62,7 +64,7 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
 
         // 2-1. 피드백 추출 - 구독 강의실 이름을 컨텍스트로 같이 넘겨서 강의실 언급 여부도 한 번에 판단
         List<String> subscribedRoomNames = subscribedRooms.stream()
-                .map(UserRoomSubResponse.RoomSubResponse::roomName)
+                .map(RoomSubResponse::roomName)
                 .toList();
 
         FeedbackExtractionResult feedbackExtractionResult = feedbackExtractionAgent.extract(rawText, subscribedRoomNames);
@@ -76,8 +78,9 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
             return;
         }
 
+        String roomName = roomNameOf(subscribedRooms, roomId.get());
         // 5. 강의실 확정 - 이후 처리로 이어감
-        proceedWithConfirmedRoom(event, userId, rawText, roomId.get(), feedbackExtractionResult);
+        proceedWithConfirmedRoom(event, userId, rawText, roomId.get(),roomName, feedbackExtractionResult);
     }
 
     /**
@@ -102,7 +105,12 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
         }
 
         feedbackExtractionCacheService.clear(userId);
-        proceedWithConfirmedRoom(event, userId, cache.rawText(), roomId.get(), cache.feedbackExtractionResult());
+
+        String roomName = cache.candidates().stream()
+                .filter(c -> c.roomId().equals(roomId.get()))
+                .map(FeedbackExtractionCache.RoomCandidate::roomName)
+                .findFirst().orElse(null);
+        proceedWithConfirmedRoom(event, userId, cache.rawText(), roomId.get(),roomName, cache.feedbackExtractionResult());
     }
 
 
@@ -111,9 +119,9 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
      * publish 실패(브로커 장애 등)나 체감 시각 조립 실패(LLM 출력이 유효 범위를 벗어난 경우)를 흡수한다 —
      * 이 메서드가 예외를 던지면 DLQ 없는 리스너 구조상 무한 재큐잉으로 이어지기 때문이다.
      */
-    private void proceedWithConfirmedRoom(TelegramInboundEvent event, Long userId, String rawText, Long roomId, FeedbackExtractionResult feedbackExtractionResult) {
-        ZonedDateTime receivedAt = event.requestAt().atZone(ZoneOffset.ofHours(9));
-        ZonedDateTime experiencedAt = ExperiencedTimeResolver.resolve(feedbackExtractionResult, receivedAt);
+    private void proceedWithConfirmedRoom(TelegramInboundEvent event, Long userId, String rawText, Long roomId, String roomName,FeedbackExtractionResult feedbackExtractionResult) {
+        LocalDateTime receivedAt = event.requestAt();
+        LocalDateTime experiencedAt = ExperiencedTimeResolver.resolve(feedbackExtractionResult, receivedAt);
 
         FeedbackProcessingEvent processingEvent = new FeedbackProcessingEvent(
                 userId, roomId, rawText,
@@ -127,12 +135,14 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
             telegramMessageService.sendFeedbackProcessingFailedMessage(event.chatId(), event.botType());
             return;
         }
-        telegramMessageService.sendFeedbackAcknowledgeMessage(event.chatId(), event.botType());
+        String text = telegramMessageService.sendFeedbackAcknowledgeMessage(event.chatId(), event.botType(),roomName);
+
+        llmConversationContextService.save(userId, new ConversationContext(IntentType.FEEDBACK.name(), rawText, text));
     }
 
 
     private void askWhichRoom(TelegramInboundEvent event, Long userId, String rawText,
-                              List<UserRoomSubResponse.RoomSubResponse> rooms,
+                              List<RoomSubResponse> rooms,
                               FeedbackExtractionResult feedbackExtractionResult) {
         List<FeedbackExtractionCache.RoomCandidate> candidates = rooms.stream()
                 .map(r -> new FeedbackExtractionCache.RoomCandidate(r.roomId(), r.roomName()))
@@ -148,4 +158,10 @@ public class FeedbackRouteHandler implements IntentRouteHandler {
         telegramMessageService.sendRoomDisambiguationAskMessage(event.chatId(), event.botType(), roomNames); //인라인 버튼으로 유저에게 물어봄
     }
 
+    private String roomNameOf(List<RoomSubResponse> rooms, Long roomId) {
+        return rooms.stream()
+                .filter(r -> r.roomId().equals(roomId))
+                .map(RoomSubResponse::roomName)
+                .findFirst().orElse(null);
+    }
 }
