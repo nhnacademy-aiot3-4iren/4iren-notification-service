@@ -5,8 +5,8 @@ import com.siren.notificationservice.core.dto.AlertHistoryKey;
 import com.siren.notificationservice.core.dto.request.AlertHistorySearchCondition;
 import com.siren.notificationservice.core.dto.response.AlertHistoryFilterOptionsResponse;
 import com.siren.notificationservice.core.dto.response.AlertHistoryResponse;
-import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import com.siren.notificationservice.core.dto.response.RoomSubResponse;
+import com.siren.notificationservice.core.dto.response.UserRoomSubResponse;
 import com.siren.notificationservice.core.entity.domain.AlertType;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.core.entity.table.AlertHistory;
@@ -24,12 +24,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class AlertHistoryServiceTest {
 
