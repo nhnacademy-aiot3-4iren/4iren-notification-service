@@ -92,7 +92,13 @@ jobs:
           done
 
           if [ -z "$STATUS" ]; then
-            echo "1번 서버 구동 실패! 배포를 중단합니다."
+            echo "1번 서버 구동 실패! 원인 파악을 위해 상세 헬스체크 결과를 출력합니다:"
+            docker exec ${{ env.IMAGE_NAME }}-1 wget -qO- http://localhost:8080/actuator/health || true
+          
+            echo -e "\n서버 에러 로그 최근 50줄을 출력합니다:"
+            docker logs --tail 50 ${{ env.IMAGE_NAME }}-1
+          
+            echo "배포를 중단합니다."
             exit 1
           fi
 
@@ -104,9 +110,9 @@ jobs:
 
           echo "2번 서버 헬스체크 시작..."
           for i in {1..20}; do
-            STATUS=$(docker exec ${{ env.IMAGE_NAME }}-2 wget -qO- http://localhost:8080/actuator/health 2>/dev/null | grep '"status":"UP"' || true)
+            STATUS=$(docker exec ${{ env.IMAGE_NAME }}-1 wget -qO- http://localhost:8080/actuator/health 2>/dev/null | grep '"status":"UP"' || true)
             if [ -n "$STATUS" ]; then
-              echo "2번 서버 구동 완료!"
+              echo "1번 서버 구동 완료!"
               break
             fi
             echo "대기 중... ($i/20)"
@@ -114,7 +120,13 @@ jobs:
           done
 
           if [ -z "$STATUS" ]; then
-            echo "2번 서버 구동 실패!"
+            echo "2번 서버 구동 실패! 원인 파악을 위해 상세 헬스체크 결과를 출력합니다:"
+            docker exec ${{ env.IMAGE_NAME }}-1 wget -qO- http://localhost:8080/actuator/health || true
+          
+            echo -e "\n서버 에러 로그 최근 50줄을 출력합니다:"
+            docker logs --tail 50 ${{ env.IMAGE_NAME }}-1
+          
+            echo "배포를 중단합니다."
             exit 1
           fi
 
