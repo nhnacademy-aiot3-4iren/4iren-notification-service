@@ -12,13 +12,11 @@ import com.siren.notificationservice.telegram.dto.response.LinkTokenResponse;
 import com.siren.notificationservice.telegram.service.TelegramLinkTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/notification")
 public class DeepLinkController implements DeepLinkControllerDoc {
     private final TelegramLinkTokenService telegramLinkTokenService;
     private final TelegramSubscriptionService telegramSubscriptionService;
