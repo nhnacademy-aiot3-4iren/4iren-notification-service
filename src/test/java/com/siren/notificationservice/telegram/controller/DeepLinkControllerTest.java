@@ -37,7 +37,7 @@ class DeepLinkControllerTest {
         when(telegramLinkTokenService.getDeepLinkUrl(new LinkTokenData(1L, UserRole.ADMIN), BotType.ADMIN_BOT))
                 .thenReturn("https://t.me/admin_bot?start=abc");
 
-        mockMvc.perform(post("/telegram/admin/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", "ADMIN"))
+        mockMvc.perform(post("/api/notification/telegram/admin/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", "ADMIN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.deepLinkUrl").value("https://t.me/admin_bot?start=abc"))
                 .andExpect(jsonPath("$.expiresInSeconds").value(300));
@@ -48,7 +48,7 @@ class DeepLinkControllerTest {
         when(telegramLinkTokenService.getDeepLinkUrl(new LinkTokenData(1L, UserRole.NORMAL), BotType.USER_BOT))
                 .thenReturn("https://t.me/member_bot?start=abc");
 
-        mockMvc.perform(post("/telegram/member/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", "NORMAL"))
+        mockMvc.perform(post("/api/notification/telegram/member/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", "NORMAL"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.deepLinkUrl").value("https://t.me/member_bot?start=abc"));
     }
@@ -57,7 +57,7 @@ class DeepLinkControllerTest {
     void getAdminLinkStatusReturnsLinkedTrue() throws Exception {
         when(telegramSubscriptionService.isLinked(1L, BotType.ADMIN_BOT)).thenReturn(true);
 
-        mockMvc.perform(get("/telegram/admin/link-status").header("X-USER-ID", "1").header("X-USER-ROLE", "ADMIN"))
+        mockMvc.perform(get("/api/notification/telegram/admin/link-status").header("X-USER-ID", "1").header("X-USER-ROLE", "ADMIN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.linked").value(true));
     }
@@ -66,7 +66,7 @@ class DeepLinkControllerTest {
     void getMemberLinkStatusReturnsLinkedFalse() throws Exception {
         when(telegramSubscriptionService.isLinked(1L, BotType.USER_BOT)).thenReturn(false);
 
-        mockMvc.perform(get("/telegram/member/link-status").header("X-USER-ID", "1").header("X-USER-ROLE", "NORMAL"))
+        mockMvc.perform(get("/api/notification/telegram/member/link-status").header("X-USER-ID", "1").header("X-USER-ROLE", "NORMAL"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.linked").value(false));
     }
@@ -75,7 +75,7 @@ class DeepLinkControllerTest {
 
     @Test
     void linkAdminTokenForbiddenForNormalRole() throws Exception {
-        mockMvc.perform(post("/telegram/admin/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", "NORMAL"))
+        mockMvc.perform(post("/api/notification/telegram/admin/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", "NORMAL"))
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(telegramLinkTokenService);
@@ -83,7 +83,7 @@ class DeepLinkControllerTest {
 
     @Test
     void getAdminLinkStatusForbiddenForNormalRole() throws Exception {
-        mockMvc.perform(get("/telegram/admin/link-status").header("X-USER-ID", "1").header("X-USER-ROLE", "NORMAL"))
+        mockMvc.perform(get("/api/notification/telegram/admin/link-status").header("X-USER-ID", "1").header("X-USER-ROLE", "NORMAL"))
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(telegramSubscriptionService);
@@ -91,7 +91,7 @@ class DeepLinkControllerTest {
 
     @Test
     void adminTokenForbiddenWhenRoleHeaderMissing() throws Exception {
-        mockMvc.perform(post("/telegram/admin/link-token").header("X-USER-ID", "1"))
+        mockMvc.perform(post("/api/notification/telegram/admin/link-token").header("X-USER-ID", "1"))
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(telegramLinkTokenService);
@@ -105,7 +105,7 @@ class DeepLinkControllerTest {
         when(telegramLinkTokenService.getDeepLinkUrl(new LinkTokenData(1L, UserRole.valueOf(role)), BotType.USER_BOT))
                 .thenReturn("https://t.me/member_bot?start=abc");
 
-        mockMvc.perform(post("/telegram/member/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", role))
+        mockMvc.perform(post("/api/notification/telegram/member/link-token").header("X-USER-ID", "1").header("X-USER-ROLE", role))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.deepLinkUrl").value("https://t.me/member_bot?start=abc"));
     }
@@ -115,7 +115,7 @@ class DeepLinkControllerTest {
     void getMemberLinkStatusAllowedForElevatedRoles(String role) throws Exception {
         when(telegramSubscriptionService.isLinked(1L, BotType.USER_BOT)).thenReturn(true);
 
-        mockMvc.perform(get("/telegram/member/link-status").header("X-USER-ID", "1").header("X-USER-ROLE", role))
+        mockMvc.perform(get("/api/notification/telegram/member/link-status").header("X-USER-ID", "1").header("X-USER-ROLE", role))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.linked").value(true));
     }
