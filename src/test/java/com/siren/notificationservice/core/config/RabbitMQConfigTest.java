@@ -1,12 +1,17 @@
 package com.siren.notificationservice.core.config;
 
+import com.siren.notificationservice.core.config.properties.RabbitAccountProperties;
+import com.siren.notificationservice.core.config.properties.RabbitAlertDigestDelayProperties;
+import com.siren.notificationservice.core.config.properties.RabbitAlertProperties;
+import com.siren.notificationservice.core.config.properties.RabbitFeedbackProcessingProperties;
+import com.siren.notificationservice.core.config.properties.RabbitNotificationDlqProperties;
+import com.siren.notificationservice.core.config.properties.RabbitTelegramInboundProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,31 +21,47 @@ class RabbitMQConfigTest {
 
     @BeforeEach
     void setUp() {
-        config = new RabbitMQConfig();
-        ReflectionTestUtils.setField(config, "telegramEventsExchangeName", "telegram.events");
-        ReflectionTestUtils.setField(config, "telegramInboundQueueName", "notification.telegram-inbound.queue");
-        ReflectionTestUtils.setField(config, "telegramInboundRoutingKey", "telegram.inbound");
-        ReflectionTestUtils.setField(config, "notificationInternalExchangeName", "notification.events");
-        ReflectionTestUtils.setField(config, "feedbackProcessingQueueName", "notification.feedback-processing.queue");
-        ReflectionTestUtils.setField(config, "feedbackProcessingRoutingKey", "notification.feedback-processing");
+        RabbitTelegramInboundProperties inbound = new RabbitTelegramInboundProperties();
+        inbound.setExchange("telegram.events");
+        inbound.setQueue("notification.telegram-inbound.queue");
+        inbound.setRoutingKey("telegram.inbound");
 
-        ReflectionTestUtils.setField(config, "alertEventsExchangeName", "alert.events");
-        ReflectionTestUtils.setField(config, "alertUrgentQueueName", "alert.urgent.queue");
-        ReflectionTestUtils.setField(config, "alertUrgentRoutingKey", "alert.urgent.*");
-        ReflectionTestUtils.setField(config, "alertDigestQueueName", "alert.digest.queue");
-        ReflectionTestUtils.setField(config, "alertDigestRoutingKey", "alert.digest.*");
+        RabbitFeedbackProcessingProperties feedback = new RabbitFeedbackProcessingProperties();
+        feedback.setExchange("notification.events");
+        feedback.setQueue("notification.feedback-processing.queue");
+        feedback.setRoutingKey("notification.feedback-processing");
 
-        ReflectionTestUtils.setField(config, "alertDigestDelayExchangeName", "alert.delay");
-        ReflectionTestUtils.setField(config, "alertDigestDelayQueueName", "alert.delay.queue");
-        ReflectionTestUtils.setField(config, "alertDigestDelayRoutingKey", "alert.delay");
-        ReflectionTestUtils.setField(config, "alertDigestDlxExchangeName", "alert.delay.dlx");
-        ReflectionTestUtils.setField(config, "alertDigestFlushQueueName", "alert.delay.flush.queue");
-        ReflectionTestUtils.setField(config, "alertDigestFlushRoutingKey", "alert.delay.dlx-flush");
-        ReflectionTestUtils.setField(config, "alertDigestTtlMs", 180000L);
+        RabbitAlertProperties alert = new RabbitAlertProperties();
+        alert.setExchange("alert.events");
+        RabbitAlertProperties.Urgent urgent = new RabbitAlertProperties.Urgent();
+        urgent.setQueue("alert.urgent.queue");
+        urgent.setRoutingKey("alert.urgent.*");
+        alert.setUrgent(urgent);
+        RabbitAlertProperties.Digest digest = new RabbitAlertProperties.Digest();
+        digest.setQueue("alert.digest.queue");
+        digest.setRoutingKey("alert.digest.*");
+        alert.setDigest(digest);
 
-        ReflectionTestUtils.setField(config, "dlxExchangeName", "notification.dlx");
-        ReflectionTestUtils.setField(config, "dlqQueueName", "notification.dlq");
-        ReflectionTestUtils.setField(config, "dlqRoutingKey", "notification.dlq");
+        RabbitAlertDigestDelayProperties alertDigestDelay = new RabbitAlertDigestDelayProperties();
+        alertDigestDelay.setExchange("alert.delay");
+        alertDigestDelay.setQueue("alert.delay.queue");
+        alertDigestDelay.setRoutingKey("alert.delay");
+        alertDigestDelay.setDlxExchange("alert.delay.dlx");
+        alertDigestDelay.setFlushQueue("alert.delay.flush.queue");
+        alertDigestDelay.setFlushRoutingKey("alert.delay.dlx-flush");
+        alertDigestDelay.setTtlMs(180000L);
+
+        RabbitAccountProperties account = new RabbitAccountProperties();
+        account.setExchange("account.events");
+        account.setQueue("account.role.queue");
+        account.setRoutingKey("account.role-change");
+
+        RabbitNotificationDlqProperties dlq = new RabbitNotificationDlqProperties();
+        dlq.setExchange("notification.dlx");
+        dlq.setQueue("notification.dlq");
+        dlq.setRoutingKey("notification.dlq");
+
+        config = new RabbitMQConfig(inbound, feedback, alert, alertDigestDelay, account, dlq);
     }
 
     // --- Telegram inbound ---

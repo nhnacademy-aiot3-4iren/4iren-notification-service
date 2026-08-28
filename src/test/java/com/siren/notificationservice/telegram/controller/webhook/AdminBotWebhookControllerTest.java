@@ -1,5 +1,6 @@
 package com.siren.notificationservice.telegram.controller.webhook;
 
+import com.siren.notificationservice.core.config.properties.RabbitTelegramInboundProperties;
 import com.siren.notificationservice.core.entity.domain.BotType;
 import com.siren.notificationservice.telegram.dto.event.TelegramInboundEvent;
 import org.junit.jupiter.api.Test;
@@ -7,6 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,9 +21,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AdminBotWebhookController.class)
+@Import(RabbitTelegramInboundProperties.class)
 @TestPropertySource(properties = {
-        "rabbitmq.exchange.telegram-events=telegram.events",
-        "rabbitmq.routing-key.telegram-inbound=telegram.inbound"
+        "rabbitmq.telegram-inbound.exchange=telegram.events",
+        "rabbitmq.telegram-inbound.routing-key=telegram.inbound"
 })
 class AdminBotWebhookControllerTest {
 

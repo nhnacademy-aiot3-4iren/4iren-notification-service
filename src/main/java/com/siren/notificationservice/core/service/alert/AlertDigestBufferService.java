@@ -1,12 +1,12 @@
 package com.siren.notificationservice.core.service.alert;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.siren.notificationservice.core.config.properties.RabbitAlertDigestDelayProperties;
 import com.siren.notificationservice.core.dto.event.AlertDigestBufferEntry;
 import com.siren.notificationservice.core.dto.event.AlertDigestFlushMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -26,10 +26,7 @@ public class AlertDigestBufferService {
     private final StringRedisTemplate redisTemplate;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
-
-    @Value("${rabbitmq.exchange.alert-digest-delay}")   private String delayExchange;
-    @Value("${rabbitmq.routing-key.alert-digest-delay}") private String delayRoutingKey;
-    @Value("${rabbitmq.alert-digest.ttl-ms}")            private long ttlMs;
+    private final RabbitAlertDigestDelayProperties alertDigestDelay;
 
     /**
      * 버퍼는 redis로 관리할 것
@@ -44,13 +41,13 @@ public class AlertDigestBufferService {
             // 이미 flush 예약이 되어있는 지 확인함
             // true: 없었으니깐 세팅 성공으로 / false: 이미 있음
             Boolean first = redisTemplate.opsForValue()
-                    .setIfAbsent(String.format(SCHEDULED_KEY, userId), "1", Duration.ofMillis(ttlMs *2));
+                    .setIfAbsent(String.format(SCHEDULED_KEY, userId), "1", Duration.ofMillis(alertDigestDelay.getTtlMs() *2));
 
             // 폴링을 없애고 싶어서 컨슈머 없는 큐(대기큐)에 큐 TTL 3분 걸어놓으면 자동으로 dlx 타고 flush 큐로 이동
             // 여기는 우선 해당 유저 아이디가 redis에 저장되어잇음을 발행(3분)
             if(Boolean.TRUE.equals(first)) {
                 // true 면 유저의 첫 발행이므로 delay 큐에 발행
-                rabbitTemplate.convertAndSend(delayExchange, delayRoutingKey, new AlertDigestFlushMessage(userId));
+                rabbitTemplate.convertAndSend(alertDigestDelay.getExchange(), alertDigestDelay.getRoutingKey(), new AlertDigestFlushMessage(userId));
             }
 
         } catch (Exception e) {

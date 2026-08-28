@@ -2,6 +2,7 @@ package com.siren.notificationservice.core.service.alert;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.siren.notificationservice.core.config.properties.RabbitAlertDigestDelayProperties;
 import com.siren.notificationservice.core.dto.event.AlertDigestBufferEntry;
 import com.siren.notificationservice.core.dto.event.AlertDigestFlushMessage;
 import com.siren.notificationservice.core.dto.event.AlertEvent;
@@ -12,7 +13,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -34,8 +34,9 @@ class AlertDigestBufferServiceTest {
     private final StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
     private final RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final RabbitAlertDigestDelayProperties alertDigestDelay = new RabbitAlertDigestDelayProperties();
     private final AlertDigestBufferService bufferService =
-            new AlertDigestBufferService(redisTemplate, rabbitTemplate, objectMapper);
+            new AlertDigestBufferService(redisTemplate, rabbitTemplate, objectMapper, alertDigestDelay);
 
     @SuppressWarnings("unchecked")
     private final ListOperations<String, String> listOps = mock(ListOperations.class);
@@ -44,9 +45,9 @@ class AlertDigestBufferServiceTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(bufferService, "delayExchange", "alert.delay");
-        ReflectionTestUtils.setField(bufferService, "delayRoutingKey", "alert.delay");
-        ReflectionTestUtils.setField(bufferService, "ttlMs", 180000L);
+        alertDigestDelay.setExchange("alert.delay");
+        alertDigestDelay.setRoutingKey("alert.delay");
+        alertDigestDelay.setTtlMs(180000L);
         when(redisTemplate.opsForList()).thenReturn(listOps);
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
     }
