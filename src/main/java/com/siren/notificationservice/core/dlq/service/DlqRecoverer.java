@@ -1,12 +1,12 @@
 package com.siren.notificationservice.core.dlq.service;
 
+import com.siren.notificationservice.core.config.properties.RabbitNotificationDlqProperties;
 import com.siren.notificationservice.core.dlq.DlqFailureDocument;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.retry.RepublishMessageRecoverer;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.PrintWriter;
@@ -22,11 +22,10 @@ public class DlqRecoverer extends RepublishMessageRecoverer{
     private final MeterRegistry meterRegistry;
 
     public DlqRecoverer(RabbitTemplate rabbitTemplate,
-                        @Value("${rabbitmq.exchange.dlx}")String dlxExchange,
-                        @Value("${rabbitmq.routing-key.dlq}")String dlqRoutingKey,
+                        RabbitNotificationDlqProperties dlqProperties,
                         MeterRegistry meterRegistry,
                         DlqFailureLogService dlqFailureLogService) {
-        super(rabbitTemplate,dlxExchange,dlqRoutingKey);
+        super(rabbitTemplate, dlqProperties.getExchange(), dlqProperties.getRoutingKey());
         this.meterRegistry = meterRegistry;
         this.dlqFailureLogService = dlqFailureLogService;
     }

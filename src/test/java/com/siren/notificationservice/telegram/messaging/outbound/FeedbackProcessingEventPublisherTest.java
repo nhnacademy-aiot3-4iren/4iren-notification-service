@@ -1,10 +1,10 @@
 package com.siren.notificationservice.telegram.messaging.outbound;
 
+import com.siren.notificationservice.core.config.properties.RabbitFeedbackProcessingProperties;
 import com.siren.notificationservice.telegram.dto.event.FeedbackProcessingEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,12 +17,13 @@ import static org.mockito.Mockito.verify;
 class FeedbackProcessingEventPublisherTest {
 
     private final RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
-    private final FeedbackProcessingEventPublisher publisher = new FeedbackProcessingEventPublisher(rabbitTemplate);
+    private final RabbitFeedbackProcessingProperties feedback = new RabbitFeedbackProcessingProperties();
+    private final FeedbackProcessingEventPublisher publisher = new FeedbackProcessingEventPublisher(rabbitTemplate, feedback);
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(publisher, "exchangeName", "notification.events");
-        ReflectionTestUtils.setField(publisher, "routingKey", "notification.feedback-processing");
+        feedback.setExchange("notification.events");
+        feedback.setRoutingKey("notification.feedback-processing");
     }
 
     @Test
