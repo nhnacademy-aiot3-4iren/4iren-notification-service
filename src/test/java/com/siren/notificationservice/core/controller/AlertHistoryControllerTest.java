@@ -230,16 +230,21 @@ class AlertHistoryControllerTest {
         verifyNoInteractions(alertHistoryService);
     }
 
-    // --- 역할 경계 (@RequireRole({OWNER, ADMIN})) ---
+    // --- 역할 경계 (@RequireRole({OWNER, ADMIN, NORMAL})) ---
+    // 알림 이력은 유저 본인에게 온 것만 조회되므로(AlertHistoryService#getAlertHistoryByUserId)
+    // NORMAL도 허용 대상 - [2026-09-01] admin/owner 전용에서 전체 role 공개로 변경.
 
     @Test
-    void getAllAlertHistory_whenNormalRole_returns403AndServiceNotCalled() throws Exception {
+    void getAllAlertHistory_whenNormalRole_returnsOkAndServiceCalled() throws Exception {
+        when(alertHistoryService.getAlertHistoryByUserId(eq(USER_ID), any(AlertHistorySearchCondition.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
         mockMvc.perform(get("/api/notification/alert-histories")
                         .header("X-USER-ID", USER_ID)
                         .header("X-USER-ROLE", "NORMAL"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
 
-        verifyNoInteractions(alertHistoryService);
+        verify(alertHistoryService).getAlertHistoryByUserId(eq(USER_ID), any(AlertHistorySearchCondition.class), any(Pageable.class));
     }
 
     @Test
