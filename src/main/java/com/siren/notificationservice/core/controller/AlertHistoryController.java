@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/notification/alert-histories")
 @RequiredArgsConstructor
-@RequireRole({Role.OWNER, Role.ADMIN})
+@RequireRole({Role.OWNER, Role.ADMIN, Role.NORMAL})
 public class AlertHistoryController implements AlertHistoryControllerDoc {
     private final AlertHistoryService alertHistoryService;
 
