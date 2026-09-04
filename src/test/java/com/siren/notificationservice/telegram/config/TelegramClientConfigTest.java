@@ -19,14 +19,14 @@ class TelegramClientConfigTest {
     void adminTelegramSenderUsesAdminBotToken() {
         TelegramSender sender = config.adminTelegramSender(properties);
 
-        assertThat(sender.getBotToken()).isEqualTo("admin-token");
+        assertThat(sender.getBaseUrl()).endsWith("admin-token/");
     }
 
     @Test
     void memberTelegramSenderUsesMemberBotToken() {
         TelegramSender sender = config.memberTelegramSender(properties);
 
-        assertThat(sender.getBotToken()).isEqualTo("member-token");
+        assertThat(sender.getBaseUrl()).endsWith("member-token/");
     }
 
     @Test

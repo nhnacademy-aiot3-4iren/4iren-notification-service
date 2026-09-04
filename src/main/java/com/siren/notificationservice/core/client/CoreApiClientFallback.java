@@ -11,24 +11,26 @@ import java.time.LocalDateTime;
 
 @Component
 public class CoreApiClientFallback implements CoreApiClient {
+    private static final String USER_ID="userId";
+    private static final String ROOM_ID="roomId";
 
     @Override
     public UserRoomSubResponse getRoomSubscriptions(Long userId) {
-        throw new CoreApiUnavailableException(userId, "userId");
+        throw new CoreApiUnavailableException(userId, USER_ID);
     }
 
     @Override
     public RoomSubscribersResponse getSubscribers(Long roomId) {
-        throw  new CoreApiUnavailableException(roomId, "roomId");
+        throw  new CoreApiUnavailableException(roomId, ROOM_ID);
     }
 
     @Override
     public RoomEnvironmentReadingResponse getRoomSensorsReadings(Long roomId, LocalDateTime requestAt) {
-        throw  new CoreApiUnavailableException(roomId, "roomId");
+        throw  new CoreApiUnavailableException(roomId, ROOM_ID);
     }
 
     @Override
     public OutsideWeather getOutsideWeather(Long roomId, LocalDateTime requestAt) {
-        throw  new CoreApiUnavailableException(roomId, "roomId");
+        throw  new CoreApiUnavailableException(roomId, ROOM_ID);
     }
 }
