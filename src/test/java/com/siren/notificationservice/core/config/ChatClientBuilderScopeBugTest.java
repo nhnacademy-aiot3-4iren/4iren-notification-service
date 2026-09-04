@@ -46,7 +46,7 @@ class ChatClientBuilderScopeBugTest {
         assertThat(advisorsOf(feedbackAgentClient))
                 .as("FeedbackExtractionAgent는 MessageChatMemoryAdvisor를 추가한 적이 없는데도 딸려옴")
                 .hasSize(2)
-                .anyMatch(a -> a instanceof MessageChatMemoryAdvisor);
+                .anyMatch(MessageChatMemoryAdvisor.class::isInstance);
 
         // 같은 Builder를 참조로 공유하므로 먼저 build()된 intentAgentClient도 결국 같은 상태를 본다.
         assertThat(advisorsOf(intentAgentClient)).isEqualTo(advisorsOf(feedbackAgentClient));
@@ -72,10 +72,10 @@ class ChatClientBuilderScopeBugTest {
         // Intent만 자기가 추가한 MessageChatMemoryAdvisor까지 2개를 가짐
         assertThat(advisorsOf(feedbackAgentClient))
                 .hasSize(1)
-                .noneMatch(a -> a instanceof MessageChatMemoryAdvisor);
+                .noneMatch(MessageChatMemoryAdvisor.class::isInstance);
         assertThat(advisorsOf(intentAgentClient))
                 .hasSize(2)
-                .anyMatch(a -> a instanceof MessageChatMemoryAdvisor);
+                .anyMatch(MessageChatMemoryAdvisor.class::isInstance);
     }
 
     // ChatClient가 등록된 advisor 목록을 밖으로 노출하는 API가 없어 리플렉션으로 내부 상태를 직접 읽음

@@ -12,13 +12,13 @@ import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
+@Repository
 public class RedisChatMemoryRepositoryImpl extends AbstractRedisTtlCache<String,List<StoredMessage>> implements ChatMemoryRepository {
     private static final Duration TTL = Duration.ofMinutes(20);
     private static final String PREFIX = "telegram:chat-memory:intent:";
