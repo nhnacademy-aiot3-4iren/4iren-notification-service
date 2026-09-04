@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/notification")
+@RequestMapping("/api/notification/telegram")
 public class DeepLinkController implements DeepLinkControllerDoc {
     private final TelegramLinkTokenService telegramLinkTokenService;
     private final TelegramSubscriptionService telegramSubscriptionService;
@@ -27,7 +27,7 @@ public class DeepLinkController implements DeepLinkControllerDoc {
      * Gateway측에서 Admin role만 통과시켜야함
      */
     @RequireRole({Role.OWNER, Role.ADMIN})
-    @PostMapping("/telegram/admin/link-token")
+    @PostMapping("/admin/link-token")
     public ResponseEntity<LinkTokenResponse> linkAdminToken(
             @RequestHeader("X-USER-ID") Long userId,
             @RequestHeader("X-USER-ROLE")UserRole role) {
@@ -39,7 +39,7 @@ public class DeepLinkController implements DeepLinkControllerDoc {
      * MemberBot에 연결하기 위한 DeepLink 제공
      */
     @RequireRole({Role.OWNER, Role.ADMIN, Role.NORMAL})
-    @PostMapping("/telegram/member/link-token")
+    @PostMapping("/member/link-token")
     public ResponseEntity<LinkTokenResponse> linkMemberToken(
             @RequestHeader("X-USER-ID") Long userId,
             @RequestHeader("X-USER-ROLE")UserRole role) {
@@ -52,7 +52,7 @@ public class DeepLinkController implements DeepLinkControllerDoc {
      * 재연동하시겠어요?" 확인 다이얼로그를 보여줄지 판단하는 데 쓴다.
      */
     @RequireRole({Role.OWNER, Role.ADMIN})
-    @GetMapping("/telegram/admin/link-status")
+    @GetMapping("/admin/link-status")
     public ResponseEntity<LinkStatusResponse> getAdminLinkStatus(
             @RequestHeader("X-USER-ID") Long userId) {
         boolean linked = telegramSubscriptionService.isLinked(userId, BotType.ADMIN_BOT);
@@ -64,7 +64,7 @@ public class DeepLinkController implements DeepLinkControllerDoc {
      * 재연동하시겠어요?" 확인 다이얼로그를 보여줄지 판단하는 데 쓴다 .
      */
     @RequireRole({Role.OWNER, Role.ADMIN, Role.NORMAL})
-    @GetMapping("/telegram/member/link-status")
+    @GetMapping("/member/link-status")
     public ResponseEntity<LinkStatusResponse> getMemberLinkStatus(
             @RequestHeader("X-USER-ID") Long userId) {
         boolean linked = telegramSubscriptionService.isLinked(userId, BotType.USER_BOT);

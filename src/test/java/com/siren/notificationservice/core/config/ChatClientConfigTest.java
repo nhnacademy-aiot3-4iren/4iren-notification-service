@@ -14,16 +14,6 @@ class ChatClientConfigTest {
     private final ChatModel chatModel = mock(ChatModel.class);
 
     @Test
-    void ollamaChatClientBuilderIsCreated() {
-        assertThat(config.ollamaChatClientBuilder(chatModel)).isNotNull();
-    }
-
-    @Test
-    void geminiChatClientBuilderIsCreated() {
-        assertThat(config.geminiChatClientBuilder(chatModel)).isNotNull();
-    }
-
-    @Test
     void geminiJsonChatClientBuilderIsCreated() {
         assertThat(config.geminiJsonChatClientBuilder(chatModel)).isNotNull();
     }

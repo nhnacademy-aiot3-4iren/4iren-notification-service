@@ -10,25 +10,11 @@ import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 
 
 @Configuration
 public class ChatClientConfig {
-
-    @Bean
-    @Primary
-    public ChatClient.Builder ollamaChatClientBuilder(@Qualifier("ollamaChatModel")ChatModel ollamaChatModel) {
-        return ChatClient.builder(ollamaChatModel)
-                .defaultAdvisors(new SimpleLoggerAdvisor());
-    }
-
-    @Bean
-    public ChatClient.Builder geminiChatClientBuilder(@Qualifier("googleGenAiChatModel") ChatModel geminiChatModel) {
-        return ChatClient.builder(geminiChatModel)
-                .defaultAdvisors(new SimpleLoggerAdvisor());
-    }
 
     @Scope("prototype") // 빈 주입때마다 매번 새로운 인스턴스!
     @Bean
